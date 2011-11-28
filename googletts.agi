@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# AGI script that uses Google Translate text to speech engine.
+# AGI script that uses Google's translate text to speech engine.
 #
 # Copyright (C) 2011, Lefteris Zafiris
 #

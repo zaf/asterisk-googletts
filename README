@@ -1,10 +1,10 @@
 =============================================
-		Google TTS script for Asterisk
+       Google TTS script for Asterisk
 =============================================
 
-This script makes use of Google translate text to speech service in order to
-redner text to speech and play it back to the user. It supports a variety of 
-different languages.
+This script makes use of Google's translate text to speech service 
+in order to redner text to speech and play it back to the user. 
+It supports a variety of different languages.
 
 ------------
 Requirements
@@ -29,8 +29,8 @@ Usage
 agi(googletts.agi,text,language,intkey):  This will invoke the Google TTS engine,
 render the text string to speech and play it to the user,
 allowing any given interrupt keys to immediately terminate and return.
-The script contacts google TTS service in order to get the voice data which stores
-in a local cache (/tmp/) for future use.
+The script contacts google's TTS service in order to get the voice data 
+which tghen stores in a local cache (/tmp/) for future use.
 
 --------  
 Examples
@@ -53,25 +53,25 @@ exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ 
 -------------------
 Supported Languages
 -------------------
-"af Afrikaans", "sq Albanian", "am Amharic", "ar Arabic", "hy Armenian", "az Azerbaijani",
-"eu Basque", "be Belarusian", "bn Bengali", "bh Bihari", "bs Bosnian", "br Breton", "bg Bulgarian",
-"km Cambodian", "ca Catalan", "zh-CN Chinese (Simplified)", "zh-TW Chinese (Traditional)",
-"co Corsican", "hr Croatian", "cs Czech", "da Danish", "nl Dutch", "en English", "eo Esperanto",
-"et Estonian", "fo Faroese", "tl Filipino", "fi Finnish", "fr French", "fy Frisian", "gl Galician",
-"ka Georgian", "de German", "el Greek", "gn Guarani", "gu Gujarati", "xx-hacker Hacker", "ha Hausa",
-"iw Hebrew", "hi Hindi", "hu Hungarian", "is Icelandic", "id Indonesian", "ia Interlingua", "ga Irish",
-"it Italian", "ja Japanese", "jw Javanese", "kn Kannada", "kk Kazakh", "rw Kinyarwanda",
-"rn Kirundi", "xx-klingon Klingon", "ko Korean", "ku Kurdish", "ky Kyrgyz", "lo Laothian",
-"la Latin", "lv Latvian", "ln Lingala", "lt Lithuanian", "mk Macedonian", "mg Malagasy",
-"ms Malay", "ml Malayalam", "mt Maltese", "mi Maori", "mr Marathi", "mo Moldavian", "mn Mongolian",
-"sr-ME Montenegrin", "ne Nepali", "no Norwegian", "nn Norwegian (Nynorsk)", "oc Occitan", "or Oriya",
-"om Oromo", "ps Pashto", "fa Persian", "xx-pirate Pirate", "pl Polish", "pt-BR Portuguese (Brazil)",
-"pt-PT Portuguese (Portugal)", "pa Punjabi", "qu Quechua", "ro Romanian", "rm Romansh", "ru Russian",
-"gd Scots Gaelic", "sr Serbian", "sh Serbo-Croatian", "st Sesotho", "sn Shona", "sd Sindhi",
-"si Sinhalese", "sk Slovak", "sl Slovenian", "so Somali", "es Spanish", "su Sundanese", "sw Swahili",
-"sv Swedish", "tg Tajik", "ta Tamil", "tt Tatar", "te Telugu", "th Thai", "ti Tigrinya", "to Tonga",
-"tr Turkish", "tk Turkmen", "tw Twi", "ug Uighur", "uk Ukrainian", "ur Urdu", "uz Uzbek",
-"vi Vietnamese", "cy Welsh", "xh Xhosa", "yi Yiddish", "yo Yoruba", "zu Zulu"
+"af" Afrikaans, "sq" Albanian, "am" Amharic, "ar" Arabic, "hy" Armenian, "az" Azerbaijani,
+"eu" Basque, "be" Belarusian, "bn" Bengali, "bh" Bihari, "bs" Bosnian, "br" Breton, "bg" Bulgarian,
+"km" Cambodian, "ca" Catalan, "zh-CN" Chinese (Simplified), "zh-TW" Chinese (Traditional),
+"co" Corsican, "hr" Croatian, "cs" Czech, "da" Danish, "nl" Dutch, "en" English, "eo" Esperanto,
+"et" Estonian, "fo" Faroese, "tl" Filipino, "fi" Finnish, "fr" French, "fy" Frisian, "gl" Galician,
+"ka" Georgian, "de" German, "el" Greek, "gn" Guarani, "gu" Gujarati, "xx-hacker" Hacker, "ha" Hausa,
+"iw" Hebrew, "hi" Hindi, "hu" Hungarian, "is" Icelandic, "id" Indonesian, "ia" Interlingua, "ga" Irish,
+"it" Italian, "ja" Japanese, "jw" Javanese, "kn" Kannada, "kk" Kazakh, "rw" Kinyarwanda,
+"rn" Kirundi, "xx-klingon" Klingon, "ko" Korean, "ku" Kurdish, "ky" Kyrgyz, "lo" Laothian,
+"la" Latin, "lv" Latvian, "ln" Lingala, "lt" Lithuanian, "mk" Macedonian, "mg" Malagasy,
+"ms" Malay, "ml" Malayalam, "mt" Maltese, "mi" Maori, "mr" Marathi, "mo" Moldavian, "mn" Mongolian,
+"sr-ME" Montenegrin, "ne" Nepali, "no" Norwegian, "nn" Norwegian (Nynorsk), "oc" Occitan, "or" Oriya,
+"om" Oromo, "ps" Pashto, "fa" Persian, "xx-pirate" Pirate, "pl" Polish, "pt-BR" Portuguese (Brazil),
+"pt-PT" Portuguese (Portugal), "pa" Punjabi, "qu" Quechua, "ro" Romanian, "rm" Romansh, "ru" Russian,
+"gd" Scots Gaelic, "sr" Serbian, "sh" Serbo-Croatian, "st" Sesotho, "sn" Shona, "sd" Sindhi,
+"si" Sinhalese, "sk" Slovak, "sl" Slovenian, "so" Somali, "es" Spanish, "su" Sundanese, "sw" Swahili,
+"sv" Swedish, "tg" Tajik, "ta" Tamil, "tt" Tatar, "te" Telugu, "th" Thai, "ti" Tigrinya, "to" Tonga,
+"tr" Turkish, "tk" Turkmen, "tw" Twi, "ug" Uighur, "uk" Ukrainian, "ur" Urdu, "uz" Uzbek,
+"vi" Vietnamese, "cy" Welsh, "xh" Xhosa, "yi" Yiddish, "yo" Yoruba, "zu" Zulu.
 
 -------
 License
