@@ -14,7 +14,7 @@ perl-libwww	The World-Wide Web library for Perl
 sox			Sound eXchange, sound processing program
 mpg123		MPEG Audio Player and decoder
 format_sln	module for asterisk
-An internet access in order to contact google and get the voice data.
+Internet access in order to contact google and get the voice data.
 
 ------------
 Installation
@@ -26,11 +26,13 @@ To make sure check your /etc/asterisk/asterisk.conf file
 -----
 Usage
 -----
-agi(googletts.agi,text,language,intkey):  This will invoke the Google TTS engine,
-render the text string to speech and play it to the user,
+agi(googletts.agi,text,language,intkey): This will invoke the Google TTS engine,
+render the text string to speech and play it back to the user,
 allowing any given interrupt keys to immediately terminate and return.
 The script contacts google's TTS service in order to get the voice data 
-which tghen stores in a local cache (/tmp/) for future use.
+which then stores in a local cache (by default /tmp/) for future use.
+Parameters like default language, enabling or disabling caching and cache dir
+can be set up by editing the script.
 
 --------  
 Examples
@@ -42,13 +44,13 @@ dialplan sample code for your extensions.conf
 exten => 1234,1,Answer()
   	
 	;;Play mesage in English:
-exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en,0)
+exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en,any)
   	
 	;;Play message in Spanish
-exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es,0)
+exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es,any)
   	
 	;;Play message in Greek
-exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el,0)
+exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el,any)
 
 -------------------
 Supported Languages
