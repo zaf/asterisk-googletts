@@ -1,0 +1,103 @@
+#!/usr/bin/env perl
+
+#
+# AGI script that uses Google Translate text to speech engine.
+#
+# Copyright (C) 2011, Lefteris Zafiris
+#
+# This program is free software, distributed under the terms of
+# the GNU General Public License Version 2. See the COPYING file
+# at the top of the source tree.
+#
+
+use warnings;
+use strict;
+use File::Temp qw(tempfile);
+use Digest::MD5 qw(md5_hex);
+use LWP::UserAgent;
+
+$| = 1;
+
+my %AGI;
+
+while(<STDIN>) {
+	chomp;
+	last if (!length($_));
+	if (/^agi_(\w+)\:\s+(.*)$/) {
+		$AGI{$1} = $2;
+	}
+}
+
+my @text;
+my $result;
+my $url        = "http://translate.google.com/translate_tts";
+my $lang       = $AGI{arg_2};
+my $intkey     = $AGI{arg_3};
+my $samplerate = 8000;
+my $cachedir   = "/tmp";
+
+if (length($AGI{arg_1}) > 100) {
+	$AGI{arg_1} = $AGI{arg_1} . ".";
+	@text = $AGI{arg_1} =~ /.{0,100}[.,!?;]|.{0,100}\W/gms;
+} else {
+	@text = ($AGI{arg_1});
+}
+
+my $ua = LWP::UserAgent->new;
+$ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
+$ua->timeout(10);
+
+foreach my $line (@text) {
+	$line =~ s/^\s+|\s+$//g;
+	last if (length($line) == 0);
+	my $filename = md5_hex($line);
+	
+	print "ANSWER\n";
+	$result = <STDIN>;
+	&checkresult($result);
+
+	if (-e "$cachedir/$filename.sln") {
+		print STDERR " -- googleTTS: File already in cache.\n";
+		print "STREAM FILE $cachedir/$filename \"$intkey\"\n";
+		$result = <STDIN>;
+		&checkresult($result);
+	} else {
+		$line =~ s/\s/+/g;
+		my $request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
+		my $response = $ua->request($request);
+		if ($response->is_success) {
+			my ($fh, $tmpname) = tempfile(
+				"ggl_XXXXXXXX",
+				SUFFIX => ".mp3",
+				TMPDIR => 1,
+				UNLINK => 1
+			);
+			open($fh, ">", "$tmpname") or die "cannot open file: $!";
+			print $fh $response->content;
+			close $fh;
+			system("mpg123 -w $cachedir/$filename.wav $tmpname > /dev/null 2>&1");
+			system("sox $cachedir/$filename.wav -t raw -r $samplerate $cachedir/$filename.sln > /dev/null 2>&1");
+			unlink("$cachedir/$filename.wav");
+			print "STREAM FILE $cachedir/$filename \"$intkey\"\n";
+			my $result = <STDIN>;
+			&checkresult($result);
+		} else {
+			print STDERR " -- googleTTS: Failed to fetch file.\n";
+		}
+	}
+}
+
+sub checkresult {
+	my ($res) = @_;
+	chomp $res;
+	if ($res =~ /^200/) {
+		$res =~ /result=(-?\d+)/;
+		if (!length($1)) {
+			print STDERR " -- googleTTS: fail: ($res)\n";
+		} else {
+			print STDERR " -- googleTTS: success: ($1)\n";
+		}
+	} else {
+		print STDERR " -- googleTTS: unexpected result '$res'\n";
+	}
+}
