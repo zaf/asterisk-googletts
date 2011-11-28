@@ -13,7 +13,8 @@
 use warnings;
 use strict;
 use File::Temp qw(tempfile);
-use File::Copy;
+use File::Copy qw(copy);
+use File::Path qw(mkpath);
 use Digest::MD5 qw(md5_hex);
 use LWP::UserAgent;
 
@@ -30,29 +31,42 @@ while(<STDIN>) {
 }
 
 my @text;
+my $line;
 my $result;
 my $filename;
+my $intkey     = "";
 my $url        = "http://translate.google.com/translate_tts";
-my $lang       = $AGI{arg_2};
-my $intkey     = $AGI{arg_3};
+my $lang       = "en";
 my $samplerate = 8000;
 my $cachedir   = "/tmp";
 my $usecache   = 1;
+my $sox        = `/usr/bin/which sox`;
+my $mpg123     = `/usr/bin/which mpg123`;
 
+if (!$sox || !$mpg123) {
+	print STDERR " -- googleTTS: sox or mpg123 is missing. Aborting.\n";
+	exit 0;
+}
+
+# Checking input text #
+$AGI{arg_1} =~ s/^\s+|\s+$//g;
 if (length($AGI{arg_1}) == 0) {
 	print STDERR " -- googleTTS: No text passed for synthesis.\n";
 	exit 0;
 } elsif (length($AGI{arg_1}) > 100) {
+	# Split input to comply with google tts requirements #
 	$AGI{arg_1} = $AGI{arg_1} . ".";
 	@text = $AGI{arg_1} =~ /.{0,100}[.,!?;]|.{0,100}\W/gms;
 } else {
 	@text = ($AGI{arg_1});
 }
 
-#To be replaced with a signal handler
-print "SET VARIABLE AGISIGHUP no\n";
-$result = <STDIN>;
-&checkresult($result);
+# Setting language #
+$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /[a-z]{2}/);
+
+# Setting interrupt keys #
+$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
+$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /[0-9#*]+/);
 
 print "ANSWER\n";
 $result = <STDIN>;
@@ -62,12 +76,12 @@ my $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
 $ua->timeout(10);
 
-foreach my $line (@text) {
+foreach $line (@text) {
 	$line =~ s/^\s+|\s+$//g;
 	last if (length($line) == 0);
 	if ($usecache) {
 		$filename = md5_hex($line);
-		if (-e "$cachedir/$filename.sln") {
+		if (-r "$cachedir/$filename.sln") {
 			print STDERR " -- googleTTS: File already in cache.\n";
 			print "STREAM FILE $cachedir/$filename \"$intkey\"\n";
 			$result = <STDIN>;
@@ -84,6 +98,7 @@ foreach my $line (@text) {
 			TMPDIR => 1,
 			UNLINK => 1
 		);
+		$SIG{"HUP"} = \&cleanup("$tmpname");
 		open($fh, ">", "$tmpname.mp3") or die "cannot open file: $!";
 		print $fh $response->content;
 		close $fh;
@@ -92,11 +107,13 @@ foreach my $line (@text) {
 		print "STREAM FILE $tmpname \"$intkey\"\n";
 		my $result = <STDIN>;
 		&checkresult($result);
+		
 		if ($usecache) {
+			mkpath("$cachedir") if (!(-d "$cachedir"));
 			print STDERR " -- googleTTS: Saving file to cache.\n";
 			copy("$tmpname.sln", "$cachedir/$filename.sln");
 		}
-		unlink("$tmpname.wav", "$tmpname.mp3", "$tmpname.sln");
+		&cleanup("$tmpname");
 	} else {
 		print STDERR " -- googleTTS: Failed to fetch file.\n";
 	}
@@ -104,17 +121,28 @@ foreach my $line (@text) {
 
 exit 0;
 
+sub cleanup {
+	my ($name) = @_;
+	my $exten;
+	foreach $exten ("mp3", "wav", "sln") {
+		unlink("$name.$exten") if ( -w "$name.$exten");
+	}
+}
+
 sub checkresult {
 	my ($res) = @_;
 	chomp $res;
 	if ($res =~ /^200/) {
 		$res =~ /result=(-?\d+)/;
 		if (!length($1)) {
-			print STDERR " -- googleTTS: fail: ($res)\n";
+			print STDERR " -- googleTTS: Command filed: ($res)\n";
+			return 1;
 		} else {
-			print STDERR " -- googleTTS: success: ($1)\n";
+			#print STDERR " -- googleTTS: success: ($1)\n";
+			return 0;
 		}
 	} else {
-		print STDERR " -- googleTTS: unexpected result '$res'\n";
+		print STDERR " -- googleTTS: Unexpected result '$res'\n";
+		return 1;
 	}
 }
