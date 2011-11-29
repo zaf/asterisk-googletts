@@ -21,19 +21,13 @@ use LWP::UserAgent;
 $| = 1;
 
 my %AGI;
-
-while(<STDIN>) {
-	chomp;
-	last if (!length($_));
-	if (/^agi_(\w+)\:\s+(.*)$/) {
-		$AGI{$1} = $2;
-	}
-}
-
 my @text;
 my $line;
 my $result;
 my $filename;
+my $fexten;
+my $request;
+my $response;
 my $intkey     = "";
 my $url        = "http://translate.google.com/translate_tts";
 my $lang       = "en";
@@ -48,6 +42,13 @@ if (!$sox || !$mpg123) {
 	exit 0;
 }
 
+# Store AGI input #
+while(<STDIN>) {
+	chomp;
+	last if (!length($_));
+	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
+}
+
 # Checking input text #
 $AGI{arg_1} =~ s/^\s+|\s+$//g;
 if (length($AGI{arg_1}) == 0) {
@@ -55,7 +56,7 @@ if (length($AGI{arg_1}) == 0) {
 	exit 0;
 } elsif (length($AGI{arg_1}) > 100) {
 	# Split input to comply with google tts requirements #
-	$AGI{arg_1} = $AGI{arg_1} . ".";
+	$AGI{arg_1} .= ".";
 	@text = $AGI{arg_1} =~ /.{0,100}[.,!?;]|.{0,100}\W/gms;
 } else {
 	@text = ($AGI{arg_1});
@@ -67,6 +68,26 @@ $lang = $AGI{arg_2} if ($AGI{arg_2} =~ /[a-z]{2}/);
 # Setting interrupt keys #
 $intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
 $intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /[0-9#*]+/);
+
+# Setting filename extension according to sample rate. #
+if ($samplerate == 8000) {
+	$fexten = "sln";
+} elsif ($samplerate == 12000) {
+	$fexten = "sln12";
+} elsif ($samplerate == 16000) {
+	$fexten = "sln16";
+} elsif ($samplerate == 24000) { 
+	$fexten = "sln24"; 
+} else {
+	$fexten = "sln";
+	$samplerate = 8000;
+}
+
+# Check cache path size #
+if ($usecache && ((length($cachedir) + 38 ) > 2048)) {
+	print STDERR " -- googleTTS: Cache path size exceeds limit. Disabling cache.\n";
+	$usecache = 0;
+}
 
 print "ANSWER\n";
 $result = <STDIN>;
@@ -81,7 +102,8 @@ foreach $line (@text) {
 	last if (length($line) == 0);
 	if ($usecache) {
 		$filename = md5_hex($line);
-		if (-r "$cachedir/$filename.sln") {
+		# Stream file from cache if it exists #
+		if (-r "$cachedir/$filename.$fexten") {
 			print STDERR " -- googleTTS: File already in cache.\n";
 			print "STREAM FILE $cachedir/$filename \"$intkey\"\n";
 			$result = <STDIN>;
@@ -89,42 +111,39 @@ foreach $line (@text) {
 			next;
 		}
 	}
+	# Format text string, convert whitespace to + #
 	$line =~ s/\s/+/g;
-	my $request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
-	my $response = $ua->request($request);
+	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
+	$response = $ua->request($request);
 	if ($response->is_success) {
-		my ($fh, $tmpname) = tempfile(
-			"ggl_XXXXXXXX",
-			TMPDIR => 1,
-			UNLINK => 1
-		);
+		my ($fh, $tmpname) = tempfile("ggl_XXXXXX", TMPDIR => 1, UNLINK => 1);
 		$SIG{"HUP"} = \&cleanup("$tmpname");
-		open($fh, ">", "$tmpname.mp3") or die "cannot open file: $!";
+		open($fh, ">", "$tmpname.mp3") or die " -- googleTTS: Cannot open file: $!";
 		print $fh $response->content;
 		close $fh;
+		# Convert mp3 file to 16bit 8Khz mono raw #
 		system("mpg123 -w $tmpname.wav $tmpname.mp3 > /dev/null 2>&1");
-		system("sox $tmpname.wav -t raw -r $samplerate $tmpname.sln > /dev/null 2>&1");
+		system("sox $tmpname.wav -t raw -r $samplerate $tmpname.$fexten > /dev/null 2>&1");
 		print "STREAM FILE $tmpname \"$intkey\"\n";
 		my $result = <STDIN>;
 		&checkresult($result);
-		
+		# Save file in cache #
 		if ($usecache) {
 			mkpath("$cachedir") if (!(-d "$cachedir"));
 			print STDERR " -- googleTTS: Saving file to cache.\n";
-			copy("$tmpname.sln", "$cachedir/$filename.sln");
+			copy("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 		}
 		&cleanup("$tmpname");
 	} else {
 		print STDERR " -- googleTTS: Failed to fetch file.\n";
 	}
 }
-
 exit 0;
 
 sub cleanup {
 	my ($name) = @_;
 	my $exten;
-	foreach $exten ("mp3", "wav", "sln") {
+	foreach $exten ("mp3", "wav", $fexten) {
 		unlink("$name.$exten") if ( -w "$name.$exten");
 	}
 }
