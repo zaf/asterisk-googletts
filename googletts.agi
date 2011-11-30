@@ -3,12 +3,28 @@
 #
 # AGI script that uses Google's translate text to speech engine.
 #
-# Copyright (C) 2011, Lefteris Zafiris
+# Copyright (C) 2011, Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2. See the COPYING file
 # at the top of the source tree.
 #
+# -----
+# Usage
+# -----
+# agi(googletts.agi,"text",language,intkey): This will invoke the Google TTS engine,
+# render the text string to speech and play it back to the user,
+# allowing any given interrupt keys to immediately terminate and return.
+# The script contacts google's TTS service in order to get the voice data
+# which then stores in a local cache (by default /tmp/) for future use.
+# 
+# Parameters like default language, sample rate, caching and cache dir
+# can be set up by altering the following variables:
+# Default langeuage: $lang
+# Sample rate:       $samplerate
+# Chace:			 $usecache
+# Chache directory:  $cachedir
+# 
 
 use warnings;
 use strict;
@@ -29,12 +45,12 @@ my $fexten;
 my $request;
 my $response;
 my $scriptname;
-my $intkey     = "";
-my $url        = "http://translate.google.com/translate_tts";
 my $lang       = "en";
 my $samplerate = 8000;
-my $cachedir   = "/tmp";
 my $usecache   = 1;
+my $cachedir   = "/tmp";
+my $intkey     = "";
+my $url        = "http://translate.google.com/translate_tts";
 my $sox        = `/usr/bin/which sox`;
 my $mpg123     = `/usr/bin/which mpg123`;
 
