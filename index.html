@@ -1,106 +1,130 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <meta charset='utf-8'>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-  <title>zaf/asterisk-googletts @ GitHub</title>
-
-  <style type="text/css">
-    body {
-      margin-top: 1.0em;
-      background-color: #a5102c;
-      font-family: Helvetica, Arial, FreeSans, san-serif;
-      color: #ffffff;
+	<title>Google text to speech script for Asterisk PBX</title>
+    <meta name="description=" content="Asterisk AGI script that uses Google's translate text to speech service.">
+	
+	<style type="text/css">
+		body {
+  		margin-top: 1.0em;
+  		background-color: #f6772f;
+		  font-family: "Helvetica,Arial,FreeSans"; 
+  		color: #000000;
     }
     #container {
       margin: 0 auto;
-      width: 700px;
+      width: 750px;
     }
-    h1 { font-size: 3.8em; color: #5aefd3; margin-bottom: 3px; }
-    h1 .small { font-size: 0.4em; }
-    h1 a { text-decoration: none }
-    h2 { font-size: 1.5em; color: #5aefd3; }
-    h3 { text-align: center; color: #5aefd3; }
-    a { color: #5aefd3; }
+		h1 { font-size: 2.5em; color: #ffffff; margin-bottom: 3px; }
+		h1 .small { font-size: 0.4em; }
+		h1 a { text-decoration: none }
+		h2 { font-size: 1.5em; color: #ffffff; }
+    h3 { text-align: center; color: #ffffff; }
+    a { color: #ffffff; }
     .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
     .download { float: right; }
-    pre { background: #000; color: #fff; padding: 15px;}
+		pre { background: #000; color: #fff; padding: 15px;}
     hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
     .footer { text-align:center; padding-top:30px; font-style: italic; }
-  </style>
+	</style>
+
 </head>
 
 <body>
-  <a href="https://github.com/zaf/asterisk-googletts"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
-
+  <a href="http://github.com/zaf/asterisk-googletts"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  
   <div id="container">
 
     <div class="download">
-      <a href="https://github.com/zaf/asterisk-googletts/zipball/master">
-        <img border="0" width="90" src="https://github.com/images/modules/download/zip.png"></a>
-      <a href="https://github.com/zaf/asterisk-googletts/tarball/master">
-        <img border="0" width="90" src="https://github.com/images/modules/download/tar.png"></a>
+      <a href="http://github.com/zaf/asterisk-googletts/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/zaf/asterisk-googletts/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
     </div>
-
-    <h1><a href="https://github.com/zaf/asterisk-googletts">asterisk-googletts</a>
-      <span class="small">by <a href="https://github.com/zaf">zaf</a></span></h1>
+      
+    <h1><a href="http://github.com/zaf/asterisk-googletts">Google's text to speech for asterisk</a> </h1>
 
     <div class="description">
-      Asterisk AGI script that uses Google's translate text to speech service.
+      AGI script for the Asterisk open source PBX which allows you to use Google's voice synthesis engine to render text to speech.
     </div>
 
-    
-      <p>This script makes use of Google's translate text to speech service in order to redner text to speech and play it back to the user. It supports a variety of different languages.</p>
-    
+    <p>This script makes use of Google's translate text to speech service 
+	in order to redner text to speech and play it back to the user.
+	It supports a variety of different languages 
+	(See <a href="https://raw.github.com/zaf/asterisk-googletts/master/README">README</a> 
+	for a complete list). It also supports 8kHz and 16kHz sample rates to provide the best 
+	possible sound quality along with the use of wideband codecs.</p>
+<h2>Dependencies</h2>
+<p>perl : The Perl Programming Language
+<br />perl-libwww : The World-Wide Web library for Perl   
+<br />sox : Sound eXchange, sound processing program
+<br />mpg123 : MPEG Audio Player and decoder
+<br />format_sln : Raw slinear module for asterisk
+<br />Internet access in order to contact google and get the voice data.
+</p>
+<h2>Install</h2>
+<p>To install copy googletts.agi to your agi-bin directory.
+<br />Usually this is /var/lib/asterisk/agi-bin/
+<br />To make sure check your /etc/asterisk/asterisk.conf file.
+</p>
+<h2>Usage</h2>
+<p>agi(googletts.agi,text,language,intkey):  This will invoke the Google TTS engine,
+render the text string to speech and play it back to the user,
+allowing any given interrupt keys to immediately terminate and return.
+The script contacts google's TTS service in order to get the voice data 
+which then stores in a local cache (by default /tmp/) for future use.
+Parameters like default language, enabling or disabling caching and cache dir
+can be set up by editing the script.</p>
 
-    
-      <h2>Dependencies</h2>
-      <p>Perl             The Perl Programming Language 
-perl-libwww  The World-Wide Web library for Perl
-sox               Sound eXchange, sound processing program
-mpg123         MPEG Audio Player and decoder
-format_sln      Raw slinear module for asterisk
-Internet access in order to contact google and get the voice data.</p>
-    
+<p>Asterisk dialplan example:<br />
+;GoogleTTS Demo<br /><br />
+exten => 1234,1,Answer()<br />
+;;Play mesage in English:<br />
+exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en,any)<br />
+;;Play message in Spanish<br />
+exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es,any)<br />
+;;Play message in Greek<br />
+exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el,any)<br />
+</p>
+<h2>License</h2>
+<p>The google TTS script for asterisk is free software distributed under the GNU General Public License version 2</p>
+<h2>Authors</h2>
+<p><a href="http://github.com/zaf">Lefteris Zafiris</a> (zaf.000@gmail.com)
+<br/>
+<br/></p>
 
-    
-      <h2>Install</h2>
-      <p>To install copy googletts.agi to your agi-bin directory.
-Usually this is /var/lib/asterisk/agi-bin/
-To make sure check your /etc/asterisk/asterisk.conf file</p>
-    
-
-    
-      <h2>License</h2>
-      <p>The GoogleTTS script for asterisk is distributed under the GNU General Public License v2.</p>
-    
-
-    
-      <h2>Authors</h2>
-      <p>Lefteris Zafiris (zaf.000@gmail.com)<br/>      </p>
-    
-
-    
-      <h2>Contact</h2>
-      <p>Lefteris Zafiris (zaf.000@gmail.com)<br/>      </p>
-    
 
     <h2>Download</h2>
     <p>
-      You can download this project in either
-      <a href="https://github.com/zaf/asterisk-googletts/zipball/master">zip</a> or
-      <a href="https://github.com/zaf/asterisk-googletts/tarball/master">tar formats.
+      You can get the latest stable version <a href="https://github.com/downloads/zaf/asterisk-googletts/asterisk-googletts-0.2.tar.gz">here</a>.<br />
+      Develompent snapshots are available in either
+      <a href="http://github.com/zaf/asterisk-googletts/zipball/master">zip</a> or
+      <a href="http://github.com/zaf/asterisk-googletts/tarball/master">tar</a> formats.
     </p>
     <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
       by running:
       <pre>$ git clone git://github.com/zaf/asterisk-googletts</pre>
     </p>
-
+      
     <div class="footer">
-      get the source code on GitHub : <a href="https://github.com/zaf/asterisk-googletts">zaf/asterisk-googletts</a>
+      get the source code on GitHub : <a href="http://github.com/zaf/asterisk-googletts">zaf/asterisk-googletts</a>
     </div>
-
+    
   </div>
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-10482811-3");
+pageTracker._trackPageview();
+} catch(err) {}</script>
 
 </body>
 </html>
