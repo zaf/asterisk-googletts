@@ -22,7 +22,7 @@
 # can be set up by altering the following variables:
 # Default langeuage: $lang
 # Sample rate:       $samplerate
-# Chace:			 $usecache
+# Chace:             $usecache
 # Chache directory:  $cachedir
 # 
 
@@ -78,10 +78,9 @@ if (length($AGI{arg_1}) == 0) {
 	print STDERR "$scriptname No text passed for synthesis.\n";
 	exit 0;
 } elsif (length($AGI{arg_1}) > 100) {
-
 	# Split input to comply with google tts requirements #
 	$AGI{arg_1} .= ".";
-	@text = $AGI{arg_1} =~ /.{1,100}[.,!?;]|.{1,100}\W/gms;
+	@text = $AGI{arg_1} =~ /.{1,100}[.,!?;:]|.{1,100}\W/gms;
 } else {
 	@text = ($AGI{arg_1});
 }
@@ -126,7 +125,6 @@ foreach $line (@text) {
 	last if (length($line) == 0);
 	if ($usecache) {
 		$filename = md5_hex($line);
-
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
 			print STDERR "$scriptname File already in cache.\n";
@@ -136,7 +134,6 @@ foreach $line (@text) {
 			next;
 		}
 	}
-
 	# Format text string, convert whitespace to + #
 	$line =~ s/\s+/+/g;
 	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
@@ -147,7 +144,6 @@ foreach $line (@text) {
 		open($fh, ">", "$tmpname.mp3") or die "$scriptname Cannot open file: $!";
 		print $fh $response->content;
 		close $fh;
-
 		# Convert mp3 file to 16bit 8Khz mono raw #
 		system($mpg123, "-q", "-w", $tmpname.".wav", $tmpname.".mp3");
 		if ($? == -1) {
@@ -164,7 +160,6 @@ foreach $line (@text) {
 		print "STREAM FILE $tmpname \"$intkey\"\n";
 		my $result = <STDIN>;
 		&checkresult($result);
-
 		# Save file in cache #
 		if ($usecache) {
 			mkpath("$cachedir") if (!(-d "$cachedir"));
@@ -195,7 +190,6 @@ sub checkresult {
 			print STDERR "$scriptname Command filed: ($res)\n";
 			return 1;
 		} else {
-
 			#print STDERR "$scriptname success: ($1)\n";
 			return 0;
 		}
