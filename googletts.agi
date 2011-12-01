@@ -86,11 +86,11 @@ if (length($AGI{arg_1}) == 0) {
 }
 
 # Setting language #
-$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /[a-z]{2}(-[a-zA-Z]{2,6})?/);
+$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/);
 
 # Setting interrupt keys #
 $intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
-$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /[0-9#*]+/);
+$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
 
 # Setting filename extension according to sample rate. #
 if ($samplerate == 8000) {
