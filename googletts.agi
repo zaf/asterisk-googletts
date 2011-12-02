@@ -65,7 +65,7 @@ $scriptname = " -- $AGI{request}:";
 
 if (!$AGI{arg_1}) {
 	$AGI{arg_1} = $ARGV[0];
-	$AGI{arg_1} = $ARGV[1];
+	$AGI{arg_2} = $ARGV[1];
 	$AGI{arg_3} = $ARGV[2];
 }
 
