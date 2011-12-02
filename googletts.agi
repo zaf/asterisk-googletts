@@ -74,6 +74,7 @@ if (!$sox || !$mpg123) {
 
 # Sanitising input #
 $AGI{arg_1} =~ s/[\\\/|*~<>^\(\)\[\]\{\}\n\r]/ /g;
+$AGI{arg_1} =~ s/&/%26/g;
 $AGI{arg_1} =~ s/^\s+|\s+$//g;
 if (length($AGI{arg_1}) == 0) {
 	print STDERR "$scriptname No text passed for synthesis.\n";
