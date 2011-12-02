@@ -63,6 +63,12 @@ while (<STDIN>) {
 }
 $scriptname = " -- $AGI{request}:";
 
+if (!$AGI{arg_1}) {
+	$AGI{arg_1} = $ARGV[0];
+	$AGI{arg_1} = $ARGV[1];
+	$AGI{arg_3} = $ARGV[2];
+}
+
 # Check for required programs #
 if (!$sox || !$mpg123) {
 	print STDERR "$scriptname sox or mpg123 is missing. Aborting.\n";
