@@ -50,6 +50,7 @@ my $samplerate = 8000;
 my $usecache   = 1;
 my $cachedir   = "/tmp";
 my $intkey     = "";
+my $tmpdir     = "/tmp";
 my $url        = "http://translate.google.com/translate_tts";
 my $sox        = `/usr/bin/which sox`;
 my $mpg123     = `/usr/bin/which mpg123`;
@@ -112,9 +113,14 @@ if ($usecache && ((length($cachedir) + 38) > 2048)) {
 	$usecache = 0;
 }
 
-print "ANSWER\n";
+# Answer channel if not already answered #
+print "CHANNEL STATUS\n";
 $result = <STDIN>;
-&checkresult($result);
+if (&checkresult($result) == 4) {
+	print "ANSWER\n";
+	$result = <STDIN>;
+	&checkresult($result);
+}
 
 my $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
@@ -139,7 +145,7 @@ foreach $line (@text) {
 	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	$response = $ua->request($request);
 	if ($response->is_success) {
-		my ($fh, $tmpname) = tempfile("ggl_XXXXXX", TMPDIR => 1, UNLINK => 1);
+		my ($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
 		$SIG{"HUP"} = \&cleanup("$tmpname");
 		open($fh, ">", "$tmpname.mp3") or die "$scriptname Cannot open file: $!";
 		print $fh $response->content;
@@ -188,13 +194,13 @@ sub checkresult {
 		$res =~ /result=(-?\d+)/;
 		if (!length($1)) {
 			print STDERR "$scriptname Command filed: ($res)\n";
-			return 1;
+			return -1;
 		} else {
-			#print STDERR "$scriptname success: ($1)\n";
-			return 0;
+			print STDERR "$scriptname Command returned: ($res)\n";
+			$1;
 		}
 	} else {
 		print STDERR "$scriptname Unexpected result '$res'\n";
-		return 1;
+		return -1;
 	}
 }
