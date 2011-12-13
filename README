@@ -2,18 +2,18 @@
        Google TTS script for Asterisk
 =============================================
 
-This script makes use of Google's translate text to speech service 
-in order to redner text to speech and play it back to the user. 
+This script makes use of Google's translate text to speech service
+in order to redner text to speech and play it back to the user.
 It supports a variety of different languages.
 
 ------------
 Requirements
 ------------
-Perl		The Perl Programming Language 
-perl-libwww	The World-Wide Web library for Perl
-sox			Sound eXchange, sound processing program
-mpg123		MPEG Audio Player and decoder
-format_sln	Raw slinear module for asterisk
+Perl         The Perl Programming Language
+perl-libwww  The World-Wide Web library for Perl
+sox          Sound eXchange, sound processing program
+mpg123       MPEG Audio Player and decoder
+format_sln   Raw slinear module for asterisk
 Internet access in order to contact google and get the voice data.
 
 ------------
@@ -26,31 +26,47 @@ To make sure check your /etc/asterisk/asterisk.conf file
 -----
 Usage
 -----
-agi(googletts.agi,text,language,intkey): This will invoke the Google TTS engine,
-render the text string to speech and play it back to the user,
-allowing any given interrupt keys to immediately terminate and return.
-The script contacts google's TTS service in order to get the voice data 
+agi(googletts.agi,text,[language],[intkey]): This will invoke the Google TTS engine,
+render the text string to speech and play it back to the user. If 'intkey' is set
+the script will wait for user input. Any given interrupt keys will cause the playback
+to immediately terminate and the dialplan to proceed to the matching extension (for use in IVR).
+
+The script contacts google's TTS service in order to get the voice data
 which then stores in a local cache (by default /tmp/) for future use.
 Parameters like default language, enabling or disabling caching and cache dir
 can be set up by editing the script.
 
---------  
+--------
 Examples
 --------
-dialplan sample code for your extensions.conf
-  
+sample dialplan code for your extensions.conf
+
 ;GoogleTTS Demo
+;PLayback messages to user
 
 exten => 1234,1,Answer()
-  	
 	;;Play mesage in English:
-exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en,any)
-  	
+exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en)
 	;;Play message in Spanish
-exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es,any)
-  	
+exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es)
 	;;Play message in Greek
-exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el,any)
+exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)
+
+;A simple dynamic IVR using GoogleTTS
+
+[my_ivr]
+exten => s,1,Answer()
+exten => s,n,Set(TIMEOUT(digit)=5)
+exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)
+	;;Wait for digit:
+exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)
+
+	;;PLayback the name of the digit and wait for another one:
+exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)
+
+exten => i,1,agi(googletts.agi,"Invalid extension.",en)
+exten => i,n,goto(s,start)
+exten => h,1,Hangup()
 
 -------------------
 Supported Languages
@@ -78,6 +94,6 @@ Supported Languages
 -------
 License
 -------
-The GoogleTTS script for asterisk is distributed under the GNU General Public 
+The GoogleTTS script for asterisk is distributed under the GNU General Public
 License v2. See COPYING for details.
 

@@ -12,19 +12,22 @@
 # -----
 # Usage
 # -----
-# agi(googletts.agi,"text",language,intkey): This will invoke the Google TTS engine,
-# render the text string to speech and play it back to the user,
-# allowing any given interrupt keys to immediately terminate and return.
+# agi(googletts.agi,"text",[language],[intkey]): This will invoke the Google TTS engine,
+# render the text string to speech and play it back to the user. If 'intkey' is set the
+# script will wait for user input. Any given interrupt keys will cause the playback
+# to immediately terminate and the dialplan to proceed to the matching extension
+# (this is mainly for use in IVR, see README for examples).
+#
 # The script contacts google's TTS service in order to get the voice data
 # which then stores in a local cache (by default /tmp/) for future use.
-# 
+#
 # Parameters like default language, sample rate, caching and cache dir
 # can be set up by altering the following variables:
 # Default langeuage: $lang
 # Sample rate:       $samplerate
 # Chace:             $usecache
 # Chache directory:  $cachedir
-# 
+#
 
 use warnings;
 use strict;
@@ -36,21 +39,33 @@ use LWP::UserAgent;
 
 $| = 1;
 
+# ----------------------------- #
+#   User defined parameters:    #
+# ----------------------------- #
+# Default language              #
+my $lang       = "en";          #
+# Output audio sample rate      #
+my $samplerate = 8000;          #
+# Use of cache mechanism        #
+my $usecache   = 1;             #
+# Cache directory path          #
+my $cachedir   = "/tmp";        #
+# ----------------------------- #
+
 my %AGI;
 my @text;
 my $line;
-my $result;
+my $input;
+my $res;
 my $filename;
 my $fexten;
 my $request;
 my $response;
+my @result;
 my $scriptname;
-my $lang       = "en";
-my $samplerate = 8000;
-my $usecache   = 1;
-my $cachedir   = "/tmp";
 my $intkey     = "";
 my $tmpdir     = "/tmp";
+my $timeout    = 5000;
 my $url        = "http://translate.google.com/translate_tts";
 my $sox        = `/usr/bin/which sox`;
 my $mpg123     = `/usr/bin/which mpg123`;
@@ -72,7 +87,7 @@ if (!$AGI{arg_1}) {
 # Check for required programs #
 if (!$sox || !$mpg123) {
 	print STDERR "$scriptname sox or mpg123 is missing. Aborting.\n";
-	exit 0;
+	exit -1;
 } else {
 	chomp($sox);
 	chomp($mpg123);
@@ -81,10 +96,11 @@ if (!$sox || !$mpg123) {
 # Sanitising input #
 $AGI{arg_1} =~ s/[\\\/|*~<>^\(\)\[\]\{\}\n\r]/ /g;
 $AGI{arg_1} =~ s/&/%26/g;
+$AGI{arg_1} =~ s/\+/%2B/g;
 $AGI{arg_1} =~ s/^\s+|\s+$//g;
 if (length($AGI{arg_1}) == 0) {
 	print STDERR "$scriptname No text passed for synthesis.\n";
-	exit 0;
+	exit -1;
 } elsif (length($AGI{arg_1}) > 100) {
 	# Split input to comply with google tts requirements #
 	$AGI{arg_1} .= ".";
@@ -94,11 +110,15 @@ if (length($AGI{arg_1}) == 0) {
 }
 
 # Setting language #
-$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/);
+if ($AGI{arg_2}) {
+	$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/);
+}
 
 # Setting interrupt keys #
-$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
-$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
+if ($AGI{arg_3}) {
+	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
+	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
+}
 
 # Setting filename extension according to sample rate. #
 if ($samplerate == 8000) {
@@ -122,11 +142,21 @@ if ($usecache && ((length($cachedir) + 38) > 2048)) {
 
 # Answer channel if not already answered #
 print "CHANNEL STATUS\n";
-$result = <STDIN>;
-if (&checkresult($result) == 4) {
+$input = <STDIN>;
+@result = &checkinput($input);
+if ($result[0] == 4) {
 	print "ANSWER\n";
-	$result = <STDIN>;
-	&checkresult($result);
+	$input = <STDIN>;
+	&checkinput($input);
+}
+
+# Get digit timeout #
+print "GET VARIABLE TIMEOUT(digit)\n";
+$input = <STDIN>;
+@result = &checkinput($input);
+if ($result[0] == 1) {
+	$result[1] =~ s/[\(\).]//g;
+	$timeout = $result[1];
 }
 
 my $ua = LWP::UserAgent->new;
@@ -140,10 +170,9 @@ foreach $line (@text) {
 		$filename = md5_hex($line);
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
-			print STDERR "$scriptname File already in cache.\n";
-			print "STREAM FILE $cachedir/$filename \"$intkey\"\n";
-			$result = <STDIN>;
-			&checkresult($result);
+			#print STDERR "$scriptname File already in cache.\n";
+			$res = &playback("$cachedir/$filename", $intkey);
+			last if ($res > 0);
 			next;
 		}
 	}
@@ -151,7 +180,10 @@ foreach $line (@text) {
 	$line =~ s/\s+/+/g;
 	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	$response = $ua->request($request);
-	if ($response->is_success) {
+	if (!$response->is_success) {
+		print STDERR "$scriptname Failed to fetch file.\n";
+		exit -1;
+	} else {
 		my ($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
 		$SIG{"HUP"} = \&cleanup("$tmpname");
 		open($fh, ">", "$tmpname.mp3") or die "$scriptname Cannot open file: $!";
@@ -162,17 +194,15 @@ foreach $line (@text) {
 		if ($? == -1) {
 			print STDERR "$scriptname Failed to execute mpg123: $!\n";
 			&cleanup("$tmpname");
-			last;
+			exit -1;
 		}
 		system($sox, $tmpname.".wav", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
 		if ($? == -1) {
 			print STDERR "$scriptname Failed to execute sox: $!\n";
 			&cleanup("$tmpname");
-			last;
+			exit -1;
 		}
-		print "STREAM FILE $tmpname \"$intkey\"\n";
-		my $result = <STDIN>;
-		&checkresult($result);
+		$res = &playback($tmpname, $intkey);
 		# Save file in cache #
 		if ($usecache) {
 			mkpath("$cachedir") if (!(-d "$cachedir"));
@@ -180,34 +210,74 @@ foreach $line (@text) {
 			copy("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 		}
 		&cleanup("$tmpname");
-	} else {
-		print STDERR "$scriptname Failed to fetch file.\n";
+		last if ($res > 0);
+	}
+}
+
+if ($intkey ne "" && $res == 0) {
+	print "WAIT FOR DIGIT $timeout\n";
+	$input = <STDIN>;
+	@result = &checkinput($input);
+	if ($result[0] > 0) {
+		print "SET EXTENSION ", chr($result[0]), "\n";
+		print "SET PRIORITY 1\n";
 	}
 }
 exit 0;
 
 sub cleanup {
 	my ($name) = @_;
-	my $exten;
-	foreach $exten ("mp3", "wav", $fexten) {
-		unlink("$name.$exten") if (-w "$name.$exten");
+	my $file_exten;
+	foreach $file_exten ("mp3", "wav", $fexten) {
+		unlink("$name.$file_exten") if (-w "$name.$file_exten");
 	}
 }
 
-sub checkresult {
+sub checkinput {
 	my ($res) = @_;
+	my @values;
+
 	chomp $res;
 	if ($res =~ /^200/) {
-		$res =~ /result=(-?\d+)/;
+		$res =~ /result=(-?\d+)\s?(.*)/;
 		if (!length($1)) {
 			print STDERR "$scriptname Command filed: ($res)\n";
-			return -1;
+			@values = ("-1");
 		} else {
-			print STDERR "$scriptname Command returned: ($res)\n";
-			$1;
+			#print STDERR "$scriptname Command returned: ($res)\n";
+			@values = ("$1", "$2");
 		}
 	} else {
 		print STDERR "$scriptname Unexpected result '$res'\n";
-		return -1;
+		@values = ("-1");
 	}
+}
+
+sub playback {
+	my ($file, $keys) = @_;
+	my $response;
+	my @result;
+
+	if ($keys eq "") {
+		print "STREAM FILE $file \"\"\n";
+		$response = <STDIN>;
+		@result = &checkinput($response);
+		if ($result[0] == -1) {
+			print STDERR "$scriptname Failed to play $file.\n";
+			return -1;
+		}
+	} else {
+		print "STREAM FILE $file \"$keys\"\n";
+		$response = <STDIN>;
+		@result = &checkinput($response);
+		if ($result[0] > 0) {
+				print "SET EXTENSION ", chr($result[0]), "\n";
+				print "SET PRIORITY 1\n";
+				return $result[0];
+		} elsif ($result[0] == -1) {
+				print STDERR "$scriptname Failed to play $file.\n";
+				return -1;
+		}
+	}
+return 0;
 }
