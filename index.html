@@ -7,12 +7,12 @@
 
 	<title>Google text to speech script for Asterisk PBX</title>
     <meta name="description=" content="Asterisk AGI script that uses Google's translate text to speech service.">
-	
+
 	<style type="text/css">
 		body {
   		margin-top: 1.0em;
   		background-color: #f6772f;
-		  font-family: "Helvetica,Arial,FreeSans"; 
+		  font-family: "Helvetica,Arial,FreeSans";
   		color: #000000;
     }
     #container {
@@ -36,7 +36,7 @@
 
 <body>
   <a href="http://github.com/zaf/asterisk-googletts"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
-  
+
   <div id="container">
 
     <div class="download">
@@ -45,22 +45,22 @@
       <a href="http://github.com/zaf/asterisk-googletts/tarball/master">
         <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
     </div>
-      
+
     <h1><a href="http://github.com/zaf/asterisk-googletts">Google's text to speech for asterisk</a> </h1>
 
     <div class="description">
       AGI script for the Asterisk open source PBX which allows you to use Google's voice synthesis engine to render text to speech.
     </div>
 
-    <p>This script makes use of Google's translate text to speech service 
+    <p>This script makes use of Google's translate text to speech service
 	in order to render text to speech and play it back to the user.
-	It supports a variety of different languages 
-	(See <a href="https://raw.github.com/zaf/asterisk-googletts/master/README">README</a> 
-	for a complete list), local caching of the voice data and also supports 8kHz or 16kHz sample rates to provide the best 
+	It supports a variety of different languages
+	(See <a href="https://raw.github.com/zaf/asterisk-googletts/master/README">README</a>
+	for a complete list), local caching of the voice data and also supports 8kHz or 16kHz sample rates to provide the best
 	possible sound quality along with the use of wideband codecs.</p>
 <h2>Dependencies</h2>
 <p>perl : The Perl Programming Language
-<br />perl-libwww : The World-Wide Web library for Perl   
+<br />perl-libwww : The World-Wide Web library for Perl
 <br />sox : Sound eXchange, sound processing program
 <br />mpg123 : MPEG Audio Player and decoder
 <br />format_sln : Raw slinear module for asterisk
@@ -72,10 +72,11 @@
 <br />To make sure check your /etc/asterisk/asterisk.conf file.
 </p>
 <h2>Usage</h2>
-<p>agi(googletts.agi,text,language,intkey):  This will invoke the Google TTS engine,
-render the text string to speech and play it back to the user,
-allowing any given interrupt keys to immediately terminate and return.
-The script contacts google's TTS service in order to get the voice data 
+<p>agi(googletts.agi,text,[language],[intkey]):  This will invoke the Google TTS engine,
+render the text string to speech and play it back to the user.  If 'intkey' is set
+the script will wait for user input. Any given interrupt keys will cause the playback
+to immediately terminate and the dialplan to proceed to the matching extension (for use in IVR).
+The script contacts google's TTS service in order to get the voice data
 which then stores in a local cache (by default /tmp/) for future use.
 Parameters like default language, enabling or disabling caching and cache dir
 can be set up by editing the script.</p>
@@ -84,11 +85,29 @@ can be set up by editing the script.</p>
 ;GoogleTTS Demo<br /><br />
 exten => 1234,1,Answer()<br />
 ;;Play mesage in English:<br />
-exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en,any)<br />
-;;Play message in Spanish<br />
-exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es,any)<br />
-;;Play message in Greek<br />
-exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el,any)<br />
+exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en)<br />
+;;Play message in Spanish:<br />
+exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es)<br />
+;;Play message in Greek:<br />
+exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)<br />
+<br />;A simple dynamic IVR using GoogleTTS<br />
+[my_ivr]<br />
+exten => s,1,Answer()<br />
+exten => s,n,Set(TIMEOUT(digit)=5)<br />
+exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)<br />
+;;Wait for digit:<br />
+exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)<br />
+<br />
+;;PLayback the name of the digit and wait for another one:<br />
+exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)<br />
+<br />
+exten => i,1,agi(googletts.agi,"Invalid extension.",en)<br />
+exten => i,n,goto(s,start)<br />
+<br />
+exten => t,1,agi(googletts.agi,"Request timed out.",en)<br />
+exten => t,n,goto(s,start)<br />
+<br />
+exten => h,1,Hangup()<br />
 </p>
 <h2>License</h2>
 <p>The google TTS script for asterisk is free software distributed under the GNU General Public License version 2</p>
@@ -100,7 +119,7 @@ exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ 
 
     <h2>Download</h2>
     <p>
-      You can get the latest stable version <a href="https://github.com/downloads/zaf/asterisk-googletts/asterisk-googletts-0.2.tar.gz">here</a>.<br />
+      You can get the latest stable version <a href="https://github.com/downloads/zaf/asterisk-googletts/asterisk-googletts-0.3.tar.gz">here</a>.<br />
       Develompent snapshots are available in either
       <a href="http://github.com/zaf/asterisk-googletts/zipball/master">zip</a> or
       <a href="http://github.com/zaf/asterisk-googletts/tarball/master">tar</a> formats.
@@ -109,11 +128,11 @@ exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ 
       by running:
       <pre>$ git clone git://github.com/zaf/asterisk-googletts</pre>
     </p>
-      
+
     <div class="footer">
       get the source code on GitHub : <a href="http://github.com/zaf/asterisk-googletts">zaf/asterisk-googletts</a>
     </div>
-    
+
   </div>
 
 <script type="text/javascript">
