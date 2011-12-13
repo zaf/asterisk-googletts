@@ -1,9 +1,17 @@
-2011-11-28 Lefteris Zafiris <zaf.000@gmail.com> - 0.1
-	Initial release 0.1
+2011-12-13 Lefteris Zafiris <zaf.000@gmail.com> - 0.3
+	Fixed compatibility with asterisk 1.4 and older.
+	Changed the arguments of tempfile() for compatibility
+	with older perl versions.
+	Encode ampersands and plus sign to ascii values.
+	Added check for channel status before answering.
+	When 'intkey' is set the script waits for user input.
 
 2011-12-01 Lefteris Zafiris <zaf.000@gmail.com> - 0.2
 	Working cache mechanism. Input sanitisation
-	and removal of dangerous characters. Better 
+	and removal of dangerous characters. Better
 	error handling. Support for sampling rates
 	other than 8KHz. Cleanup mechanism for
 	temporary files.
+
+2011-11-28 Lefteris Zafiris <zaf.000@gmail.com> - 0.1
+	Initial release 0.1

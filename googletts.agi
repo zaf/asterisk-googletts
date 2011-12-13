@@ -115,7 +115,7 @@ if ($AGI{arg_2}) {
 }
 
 # Setting interrupt keys #
-if ($AGI{arg_3}) {
+if ($AGI{arg_3} ne "") {
 	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
 	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
 }
