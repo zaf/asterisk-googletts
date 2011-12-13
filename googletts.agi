@@ -155,8 +155,8 @@ print "GET VARIABLE TIMEOUT(digit)\n";
 $input = <STDIN>;
 @result = &checkinput($input);
 if ($result[0] == 1) {
-	$result[1] =~ s/[\(\).]//g;
-	$timeout = $result[1];
+	$result[1] =~ s/[\(\)]//g;
+	$timeout = $result[1] * 1000;
 }
 
 my $ua = LWP::UserAgent->new;
@@ -206,7 +206,7 @@ foreach $line (@text) {
 		# Save file in cache #
 		if ($usecache) {
 			mkpath("$cachedir") if (!(-d "$cachedir"));
-			print STDERR "$scriptname Saving file to cache.\n";
+			#print STDERR "$scriptname Saving file to cache.\n";
 			copy("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 		}
 		&cleanup("$tmpname");

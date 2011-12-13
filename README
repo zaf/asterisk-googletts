@@ -66,6 +66,10 @@ exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one plea
 
 exten => i,1,agi(googletts.agi,"Invalid extension.",en)
 exten => i,n,goto(s,start)
+
+exten => t,1,agi(googletts.agi,"Request timed out.",en)
+exten => t,n,goto(s,start)
+
 exten => h,1,Hangup()
 
 -------------------
@@ -96,4 +100,3 @@ License
 -------
 The GoogleTTS script for asterisk is distributed under the GNU General Public
 License v2. See COPYING for details.
-
