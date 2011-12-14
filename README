@@ -50,7 +50,7 @@ exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test i
 	;;Play message in Spanish
 exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es)
 	;;Play message in Greek
-exten => 1234,n,agi(googletts,agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)
+exten => 1234,n,agi(googletts.agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)
 
 ;A simple dynamic IVR using GoogleTTS
 
