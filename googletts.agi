@@ -54,6 +54,9 @@ my $usecache = 1;
 # Cache directory path          #
 my $cachedir = "/tmp";
 
+# Verbose debugging messages    #
+my $debug = 0;
+
 # ----------------------------- #
 
 my %AGI;
@@ -165,16 +168,21 @@ if ($result[0] == 1) {
 
 my $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
-$ua->timeout(10);
+$ua->timeout(5);
 
 foreach $line (@text) {
 	$line =~ s/^\s+|\s+$//g;
 	last if (length($line) == 0);
+	if ($debug) {
+		print STDERR "$scriptname Text passed for synthesis: $line\n",
+			"$scriptname Language: $lang, Interrupt keys: $intkey Sample rate: $samplerate\n",
+			"$scriptname Timeout (ms): $timeout, Caching: $usecache, Cache dir: $cachedir\n";
+	}
 	if ($usecache) {
 		$filename = md5_hex($line);
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
-			#print STDERR "$scriptname File already in cache.\n";
+			print STDERR "$scriptname File already in cache.\n" if ($debug);
 			$res = &playback("$cachedir/$filename", $intkey);
 			last if ($res > 0);
 			next;
@@ -210,7 +218,7 @@ foreach $line (@text) {
 		# Save file in cache #
 		if ($usecache) {
 			mkpath("$cachedir") if (!(-d "$cachedir"));
-			#print STDERR "$scriptname Saving file to cache.\n";
+			print STDERR "$scriptname Saving file to cache.\n" if ($debug);
 			copy("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 		}
 		&cleanup("$tmpname");
@@ -219,10 +227,12 @@ foreach $line (@text) {
 }
 
 if ($intkey ne "" && $res == 0) {
+	print STDERR "$scriptname Waiting for digits.\n" if ($debug);
 	print "WAIT FOR DIGIT $timeout\n";
 	$input  = <STDIN>;
 	@result = &checkinput($input);
 	if ($result[0] > 0) {
+		print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
 		print "SET EXTENSION ", chr($result[0]), "\n";
 		print "SET PRIORITY 1\n";
 	}
@@ -248,8 +258,7 @@ sub checkinput {
 			print STDERR "$scriptname Command filed: ($res)\n";
 			@values = ("-1");
 		} else {
-
-			#print STDERR "$scriptname Command returned: ($res)\n";
+			print STDERR "$scriptname Command returned: ($res)\n" if ($debug);
 			@values = ("$1", "$2");
 		}
 	} else {
@@ -276,6 +285,7 @@ sub playback {
 		$response = <STDIN>;
 		@result   = &checkinput($response);
 		if ($result[0] > 0) {
+			print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
 			print "SET EXTENSION ", chr($result[0]), "\n";
 			print "SET PRIORITY 1\n";
 			return $result[0];
