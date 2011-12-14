@@ -43,13 +43,17 @@ $| = 1;
 #   User defined parameters:    #
 # ----------------------------- #
 # Default language              #
-my $lang       = "en";          #
+my $lang = "en";
+
 # Output audio sample rate      #
-my $samplerate = 8000;          #
+my $samplerate = 8000;
+
 # Use of cache mechanism        #
-my $usecache   = 1;             #
+my $usecache = 1;
+
 # Cache directory path          #
-my $cachedir   = "/tmp";        #
+my $cachedir = "/tmp";
+
 # ----------------------------- #
 
 my %AGI;
@@ -63,12 +67,12 @@ my $request;
 my $response;
 my @result;
 my $scriptname;
-my $intkey     = "";
-my $tmpdir     = "/tmp";
-my $timeout    = 5000;
-my $url        = "http://translate.google.com/translate_tts";
-my $sox        = `/usr/bin/which sox`;
-my $mpg123     = `/usr/bin/which mpg123`;
+my $intkey  = "";
+my $tmpdir  = "/tmp";
+my $timeout = 5000;
+my $url     = "http://translate.google.com/translate_tts";
+my $sox     = `/usr/bin/which sox`;
+my $mpg123  = `/usr/bin/which mpg123`;
 
 # Store AGI input #
 while (<STDIN>) {
@@ -142,7 +146,7 @@ if ($usecache && ((length($cachedir) + 38) > 2048)) {
 
 # Answer channel if not already answered #
 print "CHANNEL STATUS\n";
-$input = <STDIN>;
+$input  = <STDIN>;
 @result = &checkinput($input);
 if ($result[0] == 4) {
 	print "ANSWER\n";
@@ -152,7 +156,7 @@ if ($result[0] == 4) {
 
 # Get digit timeout #
 print "GET VARIABLE TIMEOUT(digit)\n";
-$input = <STDIN>;
+$input  = <STDIN>;
 @result = &checkinput($input);
 if ($result[0] == 1) {
 	$result[1] =~ s/[\(\)]//g;
@@ -190,13 +194,13 @@ foreach $line (@text) {
 		print $fh $response->content;
 		close $fh;
 		# Convert mp3 file to 16bit 8Khz mono raw #
-		system($mpg123, "-q", "-w", $tmpname.".wav", $tmpname.".mp3");
+		system($mpg123, "-q", "-w", $tmpname . ".wav", $tmpname . ".mp3");
 		if ($? == -1) {
 			print STDERR "$scriptname Failed to execute mpg123: $!\n";
 			&cleanup("$tmpname");
 			exit -1;
 		}
-		system($sox, $tmpname.".wav", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
+		system($sox, $tmpname . ".wav", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
 		if ($? == -1) {
 			print STDERR "$scriptname Failed to execute sox: $!\n";
 			&cleanup("$tmpname");
@@ -216,7 +220,7 @@ foreach $line (@text) {
 
 if ($intkey ne "" && $res == 0) {
 	print "WAIT FOR DIGIT $timeout\n";
-	$input = <STDIN>;
+	$input  = <STDIN>;
 	@result = &checkinput($input);
 	if ($result[0] > 0) {
 		print "SET EXTENSION ", chr($result[0]), "\n";
@@ -244,6 +248,7 @@ sub checkinput {
 			print STDERR "$scriptname Command filed: ($res)\n";
 			@values = ("-1");
 		} else {
+
 			#print STDERR "$scriptname Command returned: ($res)\n";
 			@values = ("$1", "$2");
 		}
@@ -261,7 +266,7 @@ sub playback {
 	if ($keys eq "") {
 		print "STREAM FILE $file \"\"\n";
 		$response = <STDIN>;
-		@result = &checkinput($response);
+		@result   = &checkinput($response);
 		if ($result[0] == -1) {
 			print STDERR "$scriptname Failed to play $file.\n";
 			return -1;
@@ -269,15 +274,15 @@ sub playback {
 	} else {
 		print "STREAM FILE $file \"$keys\"\n";
 		$response = <STDIN>;
-		@result = &checkinput($response);
+		@result   = &checkinput($response);
 		if ($result[0] > 0) {
-				print "SET EXTENSION ", chr($result[0]), "\n";
-				print "SET PRIORITY 1\n";
-				return $result[0];
+			print "SET EXTENSION ", chr($result[0]), "\n";
+			print "SET PRIORITY 1\n";
+			return $result[0];
 		} elsif ($result[0] == -1) {
-				print STDERR "$scriptname Failed to play $file.\n";
-				return -1;
+			print STDERR "$scriptname Failed to play $file.\n";
+			return -1;
 		}
 	}
-return 0;
+	return 0;
 }
