@@ -6,7 +6,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
 	<title>Google text to speech script for Asterisk PBX</title>
-    <meta name="description=" content="Asterisk AGI script that uses Google's translate text to speech service.">
+    <meta name="description" content="Asterisk AGI script that uses Google's translate text to speech service.">
 
 	<style type="text/css">
 		body {
@@ -82,7 +82,7 @@ Parameters like default language, enabling or disabling caching and cache dir
 can be set up by editing the script.</p>
 
 <p>Asterisk dialplan example:<br />
-;GoogleTTS Demo<br /><br />
+<pre>;GoogleTTS Demo<br /><br />
 exten => 1234,1,Answer()<br />
 ;;Play mesage in English:<br />
 exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en)<br />
@@ -107,7 +107,7 @@ exten => i,n,goto(s,start)<br />
 exten => t,1,agi(googletts.agi,"Request timed out.",en)<br />
 exten => t,n,goto(s,start)<br />
 <br />
-exten => h,1,Hangup()<br />
+exten => h,1,Hangup()<br /></pre>
 </p>
 <h2>License</h2>
 <p>The google TTS script for asterisk is free software distributed under the GNU General Public License version 2</p>
