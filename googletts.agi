@@ -35,6 +35,8 @@ use File::Temp qw(tempfile);
 use File::Copy qw(copy);
 use File::Path qw(mkpath);
 use Digest::MD5 qw(md5_hex);
+use File::Temp qw(tempfile);
+use CGI::Util qw(escape unescape);
 use LWP::UserAgent;
 
 $| = 1;
@@ -64,6 +66,8 @@ my @text;
 my $line;
 my $input;
 my $res;
+my $fh;
+our $tmpname;
 my $filename;
 my $fexten;
 my $request;
@@ -81,61 +85,55 @@ my $mpg123  = `/usr/bin/which mpg123`;
 while (<STDIN>) {
 	chomp;
 	last if (!length($_));
-	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
+	$AGI{$1} = $2 if (/^agi_([a-z]+)\:\s+(.*)$/);
 }
+($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}) = @ARGV;
+
 $scriptname = " -- $AGI{request}:";
 
-if (!$AGI{arg_1}) {
-	$AGI{arg_1} = $ARGV[0];
-	$AGI{arg_2} = $ARGV[1];
-	$AGI{arg_3} = $ARGV[2];
+if ($debug) {
+	print STDERR "$scriptname AGI Environment Dump:\n";
+	print STDERR " -- $_ = $AGI{$_}\n" foreach (sort keys %AGI);
 }
 
 # Check for required programs #
 if (!$sox || !$mpg123) {
 	print STDERR "$scriptname sox or mpg123 is missing. Aborting.\n";
-	exit -1;
+	exit 1;
 } else {
 	chomp($sox);
+	print STDERR "$scriptname sox found in: $sox\n" if ($debug);
 	chomp($mpg123);
+	print STDERR "$scriptname mpg123 found in: $mpg123\n" if ($debug);
 }
 
 # Sanitising input #
-$AGI{arg_1} =~ s/[\\\/|*~<>^\(\)\[\]\{\}\n\r]/ /g;
-$AGI{arg_1} =~ s/&/%26/g;
-$AGI{arg_1} =~ s/\+/%2B/g;
-$AGI{arg_1} =~ s/^\s+|\s+$//g;
-if (length($AGI{arg_1}) == 0) {
+$AGI{arg_1} =~ s/[\\\/|*~<>^\(\)\[\]\{\}\r\n]/ /g;
+$AGI{arg_1} =~ s/\s+/ /g;
+$AGI{arg_1} =~ s/^\s|\s$//g;
+if (!length($AGI{arg_1})) {
 	print STDERR "$scriptname No text passed for synthesis.\n";
-	exit -1;
-} elsif (length($AGI{arg_1}) > 100) {
+	exit 1;
+} else {
 	# Split input to comply with google tts requirements #
 	$AGI{arg_1} .= ".";
-	@text = $AGI{arg_1} =~ /.{1,100}[.,!?;:]|.{1,100}\W/gms;
-} else {
-	@text = ($AGI{arg_1});
+	@text = $AGI{arg_1} =~ /.{1,100}[.,!?;:]|.{1,100}\s/g;
 }
 
 # Setting language #
-if ($AGI{arg_2}) {
+if (length($AGI{arg_2})) {
 	$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/);
 }
 
 # Setting interrupt keys #
-if ($AGI{arg_3} ne "") {
+if (length($AGI{arg_3})) {
 	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
 	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
 }
 
 # Setting filename extension according to sample rate. #
-if ($samplerate == 8000) {
-	$fexten = "sln";
-} elsif ($samplerate == 12000) {
-	$fexten = "sln12";
-} elsif ($samplerate == 16000) {
+if ($samplerate == 16000) {
 	$fexten = "sln16";
-} elsif ($samplerate == 24000) {
-	$fexten = "sln24";
 } else {
 	$fexten     = "sln";
 	$samplerate = 8000;
@@ -175,7 +173,7 @@ foreach $line (@text) {
 	last if (length($line) == 0);
 	if ($debug) {
 		print STDERR "$scriptname Text passed for synthesis: $line\n",
-			"$scriptname Language: $lang, Interrupt keys: $intkey Sample rate: $samplerate\n",
+			"$scriptname Language: $lang, Interrupt keys: $intkey, Sample rate: $samplerate\n",
 			"$scriptname Timeout (ms): $timeout, Caching: $usecache, Cache dir: $cachedir\n";
 	}
 	if ($usecache) {
@@ -188,40 +186,40 @@ foreach $line (@text) {
 			next;
 		}
 	}
-	# Format text string, convert whitespace to + #
-	$line =~ s/\s+/+/g;
+	$line = escape($line);
+	print STDERR "$scriptname URL passed: $url?tl=$lang&q=$line\n" if ($debug);
 	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	$response = $ua->request($request);
 	if (!$response->is_success) {
 		print STDERR "$scriptname Failed to fetch file.\n";
-		exit -1;
+		exit 1;
 	} else {
-		my ($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-		$SIG{"HUP"} = \&cleanup("$tmpname");
-		open($fh, ">", "$tmpname.mp3") or die "$scriptname Cannot open file: $!";
+		$SIG{'HUP'} = \&hup_handler;
+		($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
+		open($fh, ">", "$tmpname.mp3") or die "$scriptname Cannot wtite to file: $!";
 		print $fh $response->content;
 		close $fh;
 		# Convert mp3 file to 16bit 8Khz mono raw #
 		system($mpg123, "-q", "-w", $tmpname . ".wav", $tmpname . ".mp3");
 		if ($? == -1) {
 			print STDERR "$scriptname Failed to execute mpg123: $!\n";
-			&cleanup("$tmpname");
-			exit -1;
+			unlink glob "$tmpname*";
+			exit 1;
 		}
 		system($sox, $tmpname . ".wav", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
 		if ($? == -1) {
 			print STDERR "$scriptname Failed to execute sox: $!\n";
-			&cleanup("$tmpname");
-			exit -1;
+			unlink glob "$tmpname*";
+			exit 1;
 		}
 		$res = &playback($tmpname, $intkey);
 		# Save file in cache #
 		if ($usecache) {
 			mkpath("$cachedir") if (!(-d "$cachedir"));
-			print STDERR "$scriptname Saving file to cache.\n" if ($debug);
+			print STDERR "$scriptname Saving file $filename to cache\n" if ($debug);
 			copy("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 		}
-		&cleanup("$tmpname");
+		unlink glob "$tmpname*";
 		last if ($res > 0);
 	}
 }
@@ -237,32 +235,24 @@ if ($intkey ne "" && $res == 0) {
 		print "SET PRIORITY 1\n";
 	}
 }
-exit 0;
-
-sub cleanup {
-	my ($name) = @_;
-	my $file_exten;
-	foreach $file_exten ("mp3", "wav", $fexten) {
-		unlink("$name.$file_exten") if (-w "$name.$file_exten");
-	}
-}
+exit;
 
 sub checkinput {
-	my ($res) = @_;
+	my ($inpt) = @_;
 	my @values;
 
-	chomp $res;
-	if ($res =~ /^200/) {
-		$res =~ /result=(-?\d+)\s?(.*)/;
+	chomp $inpt;
+	if ($inpt =~ /^200/) {
+		$inpt =~ /result=(-?\d+)\s?(.*)$/;
 		if (!length($1)) {
-			print STDERR "$scriptname Command filed: ($res)\n";
+			print STDERR "$scriptname Command failed: $inpt\n";
 			@values = ("-1");
 		} else {
-			print STDERR "$scriptname Command returned: ($res)\n" if ($debug);
+			print STDERR "$scriptname Command returned: $inpt\n" if ($debug);
 			@values = ("$1", "$2");
 		}
 	} else {
-		print STDERR "$scriptname Unexpected result '$res'\n";
+		print STDERR "$scriptname Unexpected result: $inpt\n";
 		@values = ("-1");
 	}
 }
@@ -272,27 +262,22 @@ sub playback {
 	my $response;
 	my @result;
 
-	if ($keys eq "") {
-		print "STREAM FILE $file \"\"\n";
-		$response = <STDIN>;
-		@result   = &checkinput($response);
-		if ($result[0] == -1) {
-			print STDERR "$scriptname Failed to play $file.\n";
-			return -1;
-		}
-	} else {
-		print "STREAM FILE $file \"$keys\"\n";
-		$response = <STDIN>;
-		@result   = &checkinput($response);
-		if ($result[0] > 0) {
-			print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
-			print "SET EXTENSION ", chr($result[0]), "\n";
-			print "SET PRIORITY 1\n";
-			return $result[0];
-		} elsif ($result[0] == -1) {
-			print STDERR "$scriptname Failed to play $file.\n";
-			return -1;
-		}
+	print "STREAM FILE $file \"$keys\"\n";
+	$response = <STDIN>;
+	@result   = &checkinput($response);
+	if ($result[0] >= 32) {
+		print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
+		print "SET EXTENSION ", chr($result[0]), "\n";
+		print "SET PRIORITY 1\n";
+		return $result[0];
+	} elsif ($result[0] == -1) {
+		print STDERR "$scriptname Failed to play $file.\n";
+		return -1;
 	}
 	return 0;
+}
+
+sub hup_handler {
+	unlink glob "$tmpname*";
+	die "$scriptname HUP signal received, terminating...\n";
 }
