@@ -29,17 +29,17 @@
 # Chache directory:  $cachedir
 #
 
+$| = 1;
 use warnings;
 use strict;
+use autodie qw(open close);
 use File::Temp qw(tempfile);
-use File::Copy qw(copy);
+use File::Copy qw(move);
 use File::Path qw(mkpath);
 use Digest::MD5 qw(md5_hex);
 use File::Temp qw(tempfile);
-use CGI::Util qw(escape unescape);
+use CGI::Util qw(escape);
 use LWP::UserAgent;
-
-$| = 1;
 
 # ----------------------------- #
 #   User defined parameters:    #
@@ -63,6 +63,7 @@ my $debug = 0;
 
 my %AGI;
 my @text;
+my $ua;
 my $line;
 my $input;
 my $res;
@@ -96,29 +97,24 @@ if ($debug) {
 	print STDERR " -- $_ = $AGI{$_}\n" foreach (sort keys %AGI);
 }
 
-# Check for required programs #
-if (!$sox || !$mpg123) {
-	print STDERR "$scriptname sox or mpg123 is missing. Aborting.\n";
-	exit 1;
-} else {
-	chomp($sox);
-	print STDERR "$scriptname sox found in: $sox\n" if ($debug);
-	chomp($mpg123);
-	print STDERR "$scriptname mpg123 found in: $mpg123\n" if ($debug);
-}
+# Abort if required programs not found. #
+die "$scriptname sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
+
+chomp($sox, $mpg123);
+print STDERR "$scriptname Found sox in: $sox, mpg123 in: $mpg123\n" if ($debug);
 
 # Sanitising input #
-$AGI{arg_1} =~ s/[\\\/|*~<>^\(\)\[\]\{\}\r\n]/ /g;
-$AGI{arg_1} =~ s/\s+/ /g;
-$AGI{arg_1} =~ s/^\s|\s$//g;
-if (!length($AGI{arg_1})) {
-	print STDERR "$scriptname No text passed for synthesis.\n";
-	exit 1;
-} else {
-	# Split input to comply with google tts requirements #
-	$AGI{arg_1} .= ".";
-	@text = $AGI{arg_1} =~ /.{1,100}[.,!?;:]|.{1,100}\s/g;
+for ($AGI{arg_1}) {
+	s/[\\|*~<>^\(\)\[\]\{\}\p{PosixCntrl}]/ /g;
+	s/\s+/ /g;
+	s/^\s|\s$//g;
 }
+
+die "$scriptname No text passed for synthesis.\n" if (!length($AGI{arg_1}));
+
+# Split input to comply with google tts requirements #
+$AGI{arg_1} .= "." if ($AGI{arg_1} !~ /^.+[\p{Punct}]$/);
+@text = $AGI{arg_1} =~ /.{1,100}[\p{Punct}]|.{1,100}[\p{Blank}]/g;
 
 # Setting language #
 if (length($AGI{arg_2})) {
@@ -164,7 +160,7 @@ if ($result[0] == 1) {
 	$timeout = $result[1] * 1000;
 }
 
-my $ua = LWP::UserAgent->new;
+$ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
 $ua->timeout(5);
 
@@ -190,38 +186,27 @@ foreach $line (@text) {
 	print STDERR "$scriptname URL passed: $url?tl=$lang&q=$line\n" if ($debug);
 	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	$response = $ua->request($request);
-	if (!$response->is_success) {
-		print STDERR "$scriptname Failed to fetch file.\n";
-		exit 1;
-	} else {
-		$SIG{'HUP'} = \&hup_handler;
-		($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-		open($fh, ">", "$tmpname.mp3") or die "$scriptname Cannot wtite to file: $!";
-		print $fh $response->content;
-		close $fh;
-		# Convert mp3 file to 16bit 8Khz mono raw #
-		system($mpg123, "-q", "-w", $tmpname . ".wav", $tmpname . ".mp3");
-		if ($? == -1) {
-			print STDERR "$scriptname Failed to execute mpg123: $!\n";
-			unlink glob "$tmpname*";
-			exit 1;
-		}
-		system($sox, $tmpname . ".wav", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
-		if ($? == -1) {
-			print STDERR "$scriptname Failed to execute sox: $!\n";
-			unlink glob "$tmpname*";
-			exit 1;
-		}
-		$res = &playback($tmpname, $intkey);
-		# Save file in cache #
-		if ($usecache) {
-			mkpath("$cachedir") if (!(-d "$cachedir"));
-			print STDERR "$scriptname Saving file $filename to cache\n" if ($debug);
-			copy("$tmpname.$fexten", "$cachedir/$filename.$fexten");
-		}
-		unlink glob "$tmpname*";
-		last if ($res > 0);
+	die "$scriptname Failed to fetch file.\n" if (!$response->is_success);
+	$SIG{'INT'} = \&int_handler;
+	$SIG{'HUP'} = \&int_handler;
+	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
+	open($fh, ">", "$tmpname.mp3");
+	print $fh $response->content;
+	close $fh;
+	# Convert mp3 file to 16bit 8Khz mono raw #
+	system($mpg123, "-q", "-w", $tmpname . ".wav", $tmpname . ".mp3") == 0
+		or die "$scriptname $mpg123 failed: $?\n";
+	system($sox, $tmpname . ".wav", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten") == 0
+		or die "$scriptname $sox failed: $?\n";
+	# Playback and save file in cache #
+	$res = &playback($tmpname, $intkey);
+	if ($usecache) {
+		mkpath("$cachedir") if (!(-d "$cachedir"));
+		print STDERR "$scriptname Saving file $filename to cache\n" if ($debug);
+		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 	}
+	unlink glob "$tmpname*";
+	last if ($res > 0);
 }
 
 if ($intkey ne "" && $res == 0) {
@@ -229,7 +214,7 @@ if ($intkey ne "" && $res == 0) {
 	print "WAIT FOR DIGIT $timeout\n";
 	$input  = <STDIN>;
 	@result = &checkinput($input);
-	if ($result[0] > 0) {
+	if ($result[0] >= 32 && chr($result[0]) =~ /[\w*#]/) {
 		print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
 		print "SET EXTENSION ", chr($result[0]), "\n";
 		print "SET PRIORITY 1\n";
@@ -255,29 +240,36 @@ sub checkinput {
 		print STDERR "$scriptname Unexpected result: $inpt\n";
 		@values = ("-1");
 	}
+	return @values;
 }
 
 sub playback {
 	my ($file, $keys) = @_;
-	my $response;
-	my @result;
+	my $pl_response;
+	my @pl_result;
 
 	print "STREAM FILE $file \"$keys\"\n";
-	$response = <STDIN>;
-	@result   = &checkinput($response);
-	if ($result[0] >= 32) {
-		print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
-		print "SET EXTENSION ", chr($result[0]), "\n";
+	$pl_response = <STDIN>;
+	@pl_result   = &checkinput($pl_response);
+	if ($pl_result[0] >= 32 && chr($pl_result[0]) =~ /[\w*#]/) {
+		print STDERR "$scriptname Digit ", chr($pl_result[0]), " was pressed.\n" if ($debug);
+		print "SET EXTENSION ", chr($pl_result[0]), "\n";
 		print "SET PRIORITY 1\n";
-		return $result[0];
-	} elsif ($result[0] == -1) {
+		return $pl_result[0];
+	} elsif ($pl_result[0] == -1) {
 		print STDERR "$scriptname Failed to play $file.\n";
 		return -1;
 	}
 	return 0;
 }
 
-sub hup_handler {
-	unlink glob "$tmpname*";
-	die "$scriptname HUP signal received, terminating...\n";
+sub int_handler {
+	die "$scriptname Interrupt signal received, terminating...\n";
+}
+
+END {
+	if ($tmpname) {
+		print STDERR "$scriptname Cleaning temp files.\n" if ($debug);
+		unlink glob "$tmpname*";
+	}
 }
