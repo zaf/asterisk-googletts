@@ -65,14 +65,13 @@ my %AGI;
 my @text;
 my $ua;
 my $line;
-my $input;
 my $res;
 my $fh;
 our $tmpname;
 my $filename;
 my $fexten;
-my $request;
-my $response;
+my $ua_request;
+my $ua_response;
 my @result;
 my $scriptname;
 my $intkey  = "";
@@ -116,12 +115,10 @@ die "$scriptname No text passed for synthesis.\n" if (!length($AGI{arg_1}));
 $AGI{arg_1} .= "." if ($AGI{arg_1} !~ /^.+[\p{Punct}]$/);
 @text = $AGI{arg_1} =~ /.{1,100}[\p{Punct}]|.{1,100}[\p{Blank}]/g;
 
-# Setting language #
+# Setting language and interrupt keys #
 if (length($AGI{arg_2})) {
 	$lang = $AGI{arg_2} if ($AGI{arg_2} =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/);
 }
-
-# Setting interrupt keys #
 if (length($AGI{arg_3})) {
 	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
 	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
@@ -143,18 +140,15 @@ if ($usecache && ((length($cachedir) + 38) > 2048)) {
 
 # Answer channel if not already answered #
 print "CHANNEL STATUS\n";
-$input  = <STDIN>;
-@result = &checkinput($input);
+@result = &checkresponse;
 if ($result[0] == 4) {
 	print "ANSWER\n";
-	$input = <STDIN>;
-	&checkinput($input);
+	&checkresponse;
 }
 
 # Get digit timeout #
 print "GET VARIABLE TIMEOUT(digit)\n";
-$input  = <STDIN>;
-@result = &checkinput($input);
+@result = &checkresponse;
 if ($result[0] == 1) {
 	$result[1] =~ s/[\(\)]//g;
 	$timeout = $result[1] * 1000;
@@ -184,14 +178,14 @@ foreach $line (@text) {
 	}
 	$line = escape($line);
 	print STDERR "$scriptname URL passed: $url?tl=$lang&q=$line\n" if ($debug);
-	$request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
-	$response = $ua->request($request);
-	die "$scriptname Failed to fetch file.\n" if (!$response->is_success);
+	$ua_request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
+	$ua_response = $ua->request($ua_request);
+	die "$scriptname Failed to fetch file.\n" if (!$ua_response->is_success);
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
 	open($fh, ">", "$tmpname.mp3");
-	print $fh $response->content;
+	print $fh $ua_response->content;
 	close $fh;
 	# Convert mp3 file to 16bit 8Khz mono raw #
 	system($mpg123, "-q", "-w", $tmpname . ".wav", $tmpname . ".mp3") == 0
@@ -212,8 +206,7 @@ foreach $line (@text) {
 if ($intkey ne "" && $res == 0) {
 	print STDERR "$scriptname Waiting for digits.\n" if ($debug);
 	print "WAIT FOR DIGIT $timeout\n";
-	$input  = <STDIN>;
-	@result = &checkinput($input);
+	@result = &checkresponse;
 	if ($result[0] >= 32 && chr($result[0]) =~ /[\w*#]/) {
 		print STDERR "$scriptname Digit ", chr($result[0]), " was pressed.\n" if ($debug);
 		print "SET EXTENSION ", chr($result[0]), "\n";
@@ -222,22 +215,22 @@ if ($intkey ne "" && $res == 0) {
 }
 exit;
 
-sub checkinput {
-	my ($inpt) = @_;
+sub checkresponse {
+	my $input = <STDIN>;
 	my @values;
 
-	chomp $inpt;
-	if ($inpt =~ /^200/) {
-		$inpt =~ /result=(-?\d+)\s?(.*)$/;
+	chomp $input;
+	if ($input =~ /^200/) {
+		$input =~ /result=(-?\d+)\s?(.*)$/;
 		if (!length($1)) {
-			print STDERR "$scriptname Command failed: $inpt\n";
+			print STDERR "$scriptname Command failed: $input\n";
 			@values = ("-1");
 		} else {
-			print STDERR "$scriptname Command returned: $inpt\n" if ($debug);
+			print STDERR "$scriptname Command returned: $input\n" if ($debug);
 			@values = ("$1", "$2");
 		}
 	} else {
-		print STDERR "$scriptname Unexpected result: $inpt\n";
+		print STDERR "$scriptname Unexpected result: $input\n";
 		@values = ("-1");
 	}
 	return @values;
@@ -245,18 +238,16 @@ sub checkinput {
 
 sub playback {
 	my ($file, $keys) = @_;
-	my $pl_response;
-	my @pl_result;
+	my @response;
 
 	print "STREAM FILE $file \"$keys\"\n";
-	$pl_response = <STDIN>;
-	@pl_result   = &checkinput($pl_response);
-	if ($pl_result[0] >= 32 && chr($pl_result[0]) =~ /[\w*#]/) {
-		print STDERR "$scriptname Digit ", chr($pl_result[0]), " was pressed.\n" if ($debug);
-		print "SET EXTENSION ", chr($pl_result[0]), "\n";
+	@response = &checkresponse;
+	if ($response[0] >= 32 && chr($response[0]) =~ /[\w*#]/) {
+		print STDERR "$scriptname Digit ", chr($response[0]), " was pressed.\n" if ($debug);
+		print "SET EXTENSION ", chr($response[0]), "\n";
 		print "SET PRIORITY 1\n";
-		return $pl_result[0];
-	} elsif ($pl_result[0] == -1) {
+		return $response[0];
+	} elsif ($response[0] == -1) {
 		print STDERR "$scriptname Failed to play $file.\n";
 		return -1;
 	}
