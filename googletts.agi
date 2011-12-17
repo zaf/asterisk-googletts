@@ -29,10 +29,8 @@
 # Chache directory:  $cachedir
 #
 
-$| = 1;
 use warnings;
 use strict;
-use autodie qw(open close);
 use File::Temp qw(tempfile);
 use File::Copy qw(move);
 use File::Path qw(mkpath);
@@ -40,7 +38,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Temp qw(tempfile);
 use CGI::Util qw(escape);
 use LWP::UserAgent;
-
+$| = 1;
 # ----------------------------- #
 #   User defined parameters:    #
 # ----------------------------- #
@@ -85,7 +83,7 @@ my $mpg123  = `/usr/bin/which mpg123`;
 while (<STDIN>) {
 	chomp;
 	last if (!length($_));
-	$AGI{$1} = $2 if (/^agi_([a-z]+)\:\s+(.*)$/);
+	$AGI{$1} = $2 if (/^agi(\w+)\:\s+(.*)$/);
 }
 ($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}) = @ARGV;
 
@@ -104,7 +102,7 @@ print STDERR "$scriptname Found sox in: $sox, mpg123 in: $mpg123\n" if ($debug);
 
 # Sanitising input #
 for ($AGI{arg_1}) {
-	s/[\\|*~<>^\(\)\[\]\{\}\p{PosixCntrl}]/ /g;
+	s/[\\|*~<>^\(\)\[\]\{\}[:cntrl:]]/ /g;
 	s/\s+/ /g;
 	s/^\s|\s$//g;
 }
@@ -184,9 +182,9 @@ foreach $line (@text) {
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	open($fh, ">", "$tmpname.mp3");
+	open($fh, ">", "$tmpname.mp3") or die "$scriptname Failed to open file: $!\n";
 	print $fh $ua_response->content;
-	close $fh;
+	close $fh or die "$scriptname Failed to close file: $!\n";
 	# Convert mp3 file to 16bit 8Khz mono raw #
 	system($mpg123, "-q", "-w", $tmpname . ".wav", $tmpname . ".mp3") == 0
 		or die "$scriptname $mpg123 failed: $?\n";
