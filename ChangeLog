@@ -1,3 +1,9 @@
+2011-12-20 Lefteris Zafiris <zaf.000@gmail.com> - 0.4
+	Added option for verbose debugging messages.
+	Fixed interrupt handling and cleaning of temp files.
+	Multiline and unicode input is now properly handled.
+	Code cleanup.
+
 2011-12-13 Lefteris Zafiris <zaf.000@gmail.com> - 0.3
 	Fixed compatibility with asterisk 1.4 and older.
 	Changed the arguments of tempfile() for compatibility
