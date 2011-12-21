@@ -105,8 +105,8 @@ for ($AGI{arg_1}) {
 	s/^\s|\s$//g;
 	die "$name No text passed for synthesis.\n" if (!length);
 	# Split input to comply with google tts requirements #
-	$_ .= "." unless (/^.+[\p{Punct}]$/);
-	@text = /.{1,100}[\p{Punct}]|.{1,100}[\p{Blank}]/g;
+	$_ .= "." unless (/^.+[.,?!:;]$/);
+	@text = /.{1,100}[.,?!:;]|.{1,100}\s/g;
 }
 
 # Setting language and interrupt keys #
