@@ -60,9 +60,11 @@ exten => s,n,Set(TIMEOUT(digit)=5)
 exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)
 	;;Wait for digit:
 exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)
+exten => s,n,WaitExten()
 
 	;;PLayback the name of the digit and wait for another one:
 exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)
+exten => _X,n,WaitExten()
 
 exten => i,1,agi(googletts.agi,"Invalid extension.",en)
 exten => i,n,goto(s,start)
