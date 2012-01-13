@@ -12,7 +12,7 @@
 		body {
   		margin-top: 1.0em;
   		background-color: #f6772f;
-		  font-family: "Helvetica,Arial,FreeSans";
+		  font-family: Helvetica, Arial, FreeSans, san-serif;
   		color: #000000;
     }
     #container {
@@ -82,36 +82,38 @@ Parameters like default language, enabling or disabling caching and cache dir
 can be set up by editing the script.</p>
 
 <p>Asterisk dialplan example:<br />
-<pre>;GoogleTTS Demo<br /><br />
-exten => 1234,1,Answer()<br />
-;;Play mesage in English:<br />
-exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en)<br />
-;;Play message in Spanish:<br />
-exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es)<br />
-;;Play message in Greek:<br />
-exten => 1234,n,agi(googletts.agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)<br />
-;;Play message in Japanese:<br />
-exten => 1234,n,agi(googletts.agi,"これは、日本の簡単なテストです。良い一日を。",ja)<br />
-;;Play message in simplified Chinese:<br />
-exten => 1234,n,agi(googletts.agi,"这是一个简单的测试，在中国。有一个愉快的一天。",zh-CN)<br />
-<br />;A simple dynamic IVR using GoogleTTS<br />
-[my_ivr]<br />
-exten => s,1,Answer()<br />
-exten => s,n,Set(TIMEOUT(digit)=5)<br />
-exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)<br />
-;;Wait for digit:<br />
-exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)<br />
-<br />
-;;PLayback the name of the digit and wait for another one:<br />
-exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)<br />
-<br />
-exten => i,1,agi(googletts.agi,"Invalid extension.",en)<br />
-exten => i,n,goto(s,start)<br />
-<br />
-exten => t,1,agi(googletts.agi,"Request timed out.",en)<br />
-exten => t,n,goto(s,start)<br />
-<br />
-exten => h,1,Hangup()<br /></pre>
+<pre>;GoogleTTS Demo
+
+exten => 1234,1,Answer()
+  ;;Play mesage in English:
+exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en)
+  ;;Play message in Spanish:
+exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es)
+  ;;Play message in Greek:
+exten => 1234,n,agi(googletts.agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)
+  ;;Play message in Japanese:
+exten => 1234,n,agi(googletts.agi,"これは、日本の簡単なテストです。良い一日を。",ja)
+  ;;Play message in simplified Chinese:
+exten => 1234,n,agi(googletts.agi,"这是一个简单的测试，在中国。有一个愉快的一天。",zh-CN)
+
+;A simple dynamic IVR using GoogleTTS
+
+[my_ivr]
+exten => s,1,Answer()
+exten => s,n,Set(TIMEOUT(digit)=5)
+exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)
+  ;;Wait for digit:
+exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)
+  ;;PLayback the name of the digit and wait for another one:
+exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)
+
+exten => i,1,agi(googletts.agi,"Invalid extension.",en)
+exten => i,n,goto(s,start)
+
+exten => t,1,agi(googletts.agi,"Request timed out.",en)
+exten => t,n,goto(s,start)
+
+exten => h,1,Hangup()</pre>
 </p>
 <h2>License</h2>
 <p>The google TTS script for asterisk is free software distributed under the GNU General Public License version 2</p>
@@ -132,6 +134,13 @@ exten => h,1,Hangup()<br /></pre>
       by running:
       <pre>$ git clone git://github.com/zaf/asterisk-googletts</pre>
     </p>
+
+		<h2>Links</h2>
+	<p>
+		<a href="http://zaf.github.com/asterisk-speech-recog/">Speech recognition for Asterisk</a><br/>
+		<a href="http://zaf.github.com/Asterisk-Flite/">Asterisk Flite text to speech module</a><br/>
+		<a href="http://zaf.github.com/Asterisk-eSpeak/">Asterisk e-Speak text to speech module</a>
+	</p>
 
     <div class="footer">
       get the source code on GitHub : <a href="http://github.com/zaf/asterisk-googletts">zaf/asterisk-googletts</a>
