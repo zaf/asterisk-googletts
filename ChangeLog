@@ -1,3 +1,11 @@
+2012-01-18 Lefteris Zafiris <zaf.000@gmail.com> - 0.5
+	Removed the waiting for user input after the end of playback.
+	It is now advised to use Waitexten() in IVR to get that behavior.
+    Updated dialplan examples in README accordingly.
+	Replaced POSIX character class [:punct:] in text splitting regural
+	expressions. This fixes a misbehavior with some unicode strings.
+	Added sample cli app that does speech synthesis.
+
 2011-12-20 Lefteris Zafiris <zaf.000@gmail.com> - 0.4
 	Added option for verbose debugging messages.
 	Fixed interrupt handling and cleaning of temp files.
