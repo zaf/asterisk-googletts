@@ -78,8 +78,7 @@ the script will wait for user input. Any given interrupt keys will cause the pla
 to immediately terminate and the dialplan to proceed to the matching extension (for use in IVR).
 The script contacts google's TTS service in order to get the voice data
 which then stores in a local cache (by default /tmp/) for future use.
-Parameters like default language, enabling or disabling caching and cache dir
-can be set up by editing the script.</p>
+Parameters like default language, use of cache and cache dir can be set up by the user.</p>
 
 <p>Asterisk dialplan example:<br />
 <pre>;GoogleTTS Demo
@@ -95,17 +94,21 @@ exten => 1234,n,agi(googletts.agi,"Αυτό είναι ένα απλό τέστ 
 exten => 1234,n,agi(googletts.agi,"これは、日本の簡単なテストです。良い一日を。",ja)
   ;;Play message in simplified Chinese:
 exten => 1234,n,agi(googletts.agi,"这是一个简单的测试，在中国。有一个愉快的一天。",zh-CN)
-
+</pre>
+<pre>
 ;A simple dynamic IVR using GoogleTTS
 
 [my_ivr]
 exten => s,1,Answer()
 exten => s,n,Set(TIMEOUT(digit)=5)
 exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)
-  ;;Wait for digit:
+	;;Wait for digit:
 exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)
-  ;;PLayback the name of the digit and wait for another one:
+exten => s,n,WaitExten()
+
+	;;PLayback the name of the digit and wait for another one:
 exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)
+exten => _X,n,WaitExten()
 
 exten => i,1,agi(googletts.agi,"Invalid extension.",en)
 exten => i,n,goto(s,start)
@@ -113,7 +116,8 @@ exten => i,n,goto(s,start)
 exten => t,1,agi(googletts.agi,"Request timed out.",en)
 exten => t,n,goto(s,start)
 
-exten => h,1,Hangup()</pre>
+exten => h,1,Hangup()
+</pre>
 </p>
 <h2>License</h2>
 <p>The google TTS script for asterisk is free software distributed under the GNU General Public License version 2</p>
@@ -125,7 +129,7 @@ exten => h,1,Hangup()</pre>
 
     <h2>Download</h2>
     <p>
-      You can get the latest stable version <a href="https://github.com/downloads/zaf/asterisk-googletts/asterisk-googletts-0.4.tar.gz">here</a>.<br />
+      You can get the latest stable version <a href="https://github.com/downloads/zaf/asterisk-googletts/asterisk-googletts-0.5.tar.gz">here</a>.<br />
       Develompent snapshots are available in either
       <a href="http://github.com/zaf/asterisk-googletts/zipball/master">zip</a> or
       <a href="http://github.com/zaf/asterisk-googletts/tarball/master">tar</a> formats.
