@@ -224,7 +224,9 @@ sub playback {
 	if ($response[0] >= 32 && chr($response[0]) =~ /[\w*#]/) {
 		print STDERR "$name Got digit ", chr($response[0]), "\n" if ($debug);
 		print "SET EXTENSION ", chr($response[0]), "\n";
+		&checkresponse();
 		print "SET PRIORITY 1\n";
+		&checkresponse();
 		return $response[0];
 	} elsif ($response[0] == -1) {
 		print STDERR "$name Failed to play $file.\n";
