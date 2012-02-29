@@ -45,11 +45,11 @@ sample dialplan code for your extensions.conf
 ;PLayback messages to user
 
 exten => 1234,1,Answer()
-	;;Play mesage in English:
+    ;;Play mesage in English:
 exten => 1234,n,agi(googletts.agi,"This is a simple google text to speech test in english.",en)
-	;;Play message in Spanish
+    ;;Play message in Spanish
 exten => 1234,n,agi(googletts.agi,"Esta es una simple prueba en español.",es)
-	;;Play message in Greek
+    ;;Play message in Greek
 exten => 1234,n,agi(googletts.agi,"Αυτό είναι ένα απλό τέστ στα ελληνικά.",el)
 
 ;A simple dynamic IVR using GoogleTTS
@@ -58,11 +58,11 @@ exten => 1234,n,agi(googletts.agi,"Αυτό είναι ένα απλό τέστ 
 exten => s,1,Answer()
 exten => s,n,Set(TIMEOUT(digit)=5)
 exten => s,n,agi(googletts.agi,"Welcome to my small interactive voice response menu.",en)
-	;;Wait for digit:
+    ;;Wait for digit:
 exten => s,n(start),agi(googletts.agi,"Please dial a digit.",en,any)
 exten => s,n,WaitExten()
 
-	;;PLayback the name of the digit and wait for another one:
+    ;;PLayback the name of the digit and wait for another one:
 exten => _X,1,agi(googletts.agi,"You just pressed ${EXTEN}. Try another one please.",en,any)
 exten => _X,n,WaitExten()
 
@@ -77,25 +77,128 @@ exten => h,1,Hangup()
 -------------------
 Supported Languages
 -------------------
-"af" Afrikaans, "sq" Albanian, "am" Amharic, "ar" Arabic, "hy" Armenian, "az" Azerbaijani,
-"eu" Basque, "be" Belarusian, "bn" Bengali, "bh" Bihari, "bs" Bosnian, "br" Breton, "bg" Bulgarian,
-"km" Cambodian, "ca" Catalan, "zh-CN" Chinese (Simplified), "zh-TW" Chinese (Traditional),
-"co" Corsican, "hr" Croatian, "cs" Czech, "da" Danish, "nl" Dutch, "en" English, "eo" Esperanto,
-"et" Estonian, "fo" Faroese, "tl" Filipino, "fi" Finnish, "fr" French, "fy" Frisian, "gl" Galician,
-"ka" Georgian, "de" German, "el" Greek, "gn" Guarani, "gu" Gujarati, "xx-hacker" Hacker, "ha" Hausa,
-"iw" Hebrew, "hi" Hindi, "hu" Hungarian, "is" Icelandic, "id" Indonesian, "ia" Interlingua, "ga" Irish,
-"it" Italian, "ja" Japanese, "jw" Javanese, "kn" Kannada, "kk" Kazakh, "rw" Kinyarwanda,
-"rn" Kirundi, "xx-klingon" Klingon, "ko" Korean, "ku" Kurdish, "ky" Kyrgyz, "lo" Laothian,
-"la" Latin, "lv" Latvian, "ln" Lingala, "lt" Lithuanian, "mk" Macedonian, "mg" Malagasy,
-"ms" Malay, "ml" Malayalam, "mt" Maltese, "mi" Maori, "mr" Marathi, "mo" Moldavian, "mn" Mongolian,
-"sr-ME" Montenegrin, "ne" Nepali, "no" Norwegian, "nn" Norwegian (Nynorsk), "oc" Occitan, "or" Oriya,
-"om" Oromo, "ps" Pashto, "fa" Persian, "xx-pirate" Pirate, "pl" Polish, "pt-BR" Portuguese (Brazil),
-"pt-PT" Portuguese (Portugal), "pa" Punjabi, "qu" Quechua, "ro" Romanian, "rm" Romansh, "ru" Russian,
-"gd" Scots Gaelic, "sr" Serbian, "sh" Serbo-Croatian, "st" Sesotho, "sn" Shona, "sd" Sindhi,
-"si" Sinhalese, "sk" Slovak, "sl" Slovenian, "so" Somali, "es" Spanish, "su" Sundanese, "sw" Swahili,
-"sv" Swedish, "tg" Tajik, "ta" Tamil, "tt" Tatar, "te" Telugu, "th" Thai, "ti" Tigrinya, "to" Tonga,
-"tr" Turkish, "tk" Turkmen, "tw" Twi, "ug" Uighur, "uk" Ukrainian, "ur" Urdu, "uz" Uzbek,
-"vi" Vietnamese, "cy" Welsh, "xh" Xhosa, "yi" Yiddish, "yo" Yoruba, "zu" Zulu.
+Afrikaans:          af
+Albanian:           sq
+Amharic:            am
+Arabic:             ar
+Armenian:           hy
+Azerbaijani:        az
+Basque:             eu
+Belarusian:         be
+Bengali:            bn
+Bihari:             bh
+Bosnian:            bs
+Breton:             br
+Bulgarian:          bg
+Cambodian:          km
+Catalan:            ca
+Chinese Simplified: zh-CN
+Chinese Traditional:zh-TW
+Corsican:           co
+Croatian:           hr
+Czech:              cs
+Danish:             da
+Dutch:              nl
+English:            en
+Esperanto:          eo
+Estonian:           et
+Faroese:            fo
+Filipino:           tl
+Finnish:            fi
+French:             fr
+Frisian:            fy
+Galician:           gl
+Georgian:           ka
+German:             de
+Greek:              el
+Guarani:            gn
+Gujarati:           gu
+Hacker:             xx-hacker
+Hausa:              ha
+Hebrew:             iw
+Hindi:              hi
+Hungarian:          hu
+Icelandic:          is
+Indonesian:         id
+Interlingua:        ia
+Irish:              ga
+Italian:            it
+Japanese:           ja
+Javanese:           jw
+Kannada:            kn
+Kazakh:             kk
+Kinyarwanda:        rw
+Kirundi:            rn
+Klingon:            xx-klingon
+Korean:             ko
+Kurdish:            ku
+Kyrgyz:             ky
+Laothian:           lo
+Latin:              la
+Latvian:            lv
+Lingala:            ln
+Lithuanian:         lt
+Macedonian:         mk
+Malagasy:           mg
+Malay:              ms
+Malayalam:          ml
+Maltese:            mt
+Maori:              mi
+Marathi:            mr
+Moldavian:          mo
+Mongolian:          mn
+Montenegrin:        sr-ME
+Nepali:             ne
+Norwegian:          no
+Norwegian Nynorsk:  nn
+Occitan:            oc
+Oriya:              or
+Oromo:              om
+Pashto:             ps
+Persian:            fa
+Pirate:             xx-pirate
+Polish:             pl
+Portuguese Brazil:  pt-BR
+Portuguese Portugal:pt-PT
+Punjabi:            pa
+Quechua:            qu
+Romanian:           ro
+Romansh:            rm
+Russian:            ru
+Scots Gaelic:       gd
+Serbian:            sr
+Serbo-Croatian:     sh
+Sesotho:            st
+Shona:              sn
+Sindhi:             sd
+Sinhalese:          si
+Slovak:             sk
+Slovenian:          sl
+Somali:             so
+Spanish:            es
+Sundanese:          su
+Swahili:            sw
+Swedish:            sv
+Tajik:              tg
+Tamil:              ta
+Tatar:              tt
+Telugu:             te
+Thai:               th
+Tigrinya:           ti
+Tonga:              to
+Turkish:            tr
+Turkmen:            tk
+Twi:                tw
+Uighur:             ug
+Ukrainian:          uk
+Urdu:               ur
+Uzbek:              uz
+Vietnamese:         vi
+Welsh:              cy
+Xhosa:              xh
+Yiddish:            yi
+Yoruba:             yo
+Zulu:               zu
 
 -------
 License
