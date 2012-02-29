@@ -11,38 +11,51 @@
 
 use warnings;
 use strict;
+use Getopt::Std;
 use File::Temp qw(tempfile);
 use CGI::Util qw(escape);
 use LWP::UserAgent;
 
+&VERSION_MESSAGE() if (!@ARGV);
+
+my %options;
 my @text;
-my $lang;
 my @filelist;
-my $tmpdir = "/tmp";
-my $url    = "http://translate.google.com/translate_tts";
-my $mpg123 = `/usr/bin/which mpg123`;
+my $lang    = "en";
+my $tmpdir  = "/tmp";
+my $url     = "http://translate.google.com/translate_tts";
+my $mpg123  = `/usr/bin/which mpg123`;
 
-if (!@ARGV || $ARGV[0] eq '-h' || $ARGV[0] eq '--help') {
-	print "Text to speech synthesis using google voice.\n\n";
-	print "Usage  : $0 [Language] [Text]\n";
-	print "Example: $0 en \"hello world\"\n\n";
-	exit;
+getopts('o:l:t:hq', \%options);
+
+&VERSION_MESSAGE() if (defined $options{h});
+if (!defined $options{t}) {
+	&say_msg("No text passed for synthesis. Aborting.");
+	exit 1;
 }
-
-die "mpg123 is missing. Aborting.\n" if (!$mpg123);
+if (!$mpg123) {
+	&say_msg("mpg123 is missing. Aborting.");
+	exit 1;
+}
 chomp($mpg123);
 
-if ($ARGV[0] =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/) {
-	$lang = $ARGV[0];
-} else {
-	die "Wrong language setting. Aborting.\n";
+if (defined $options{l}) {
+	if ($options{l} =~ /^[a-z]{2}(-[a-zA-Z]{2,6})?$/) {
+		$lang = $options{l};
+	} else {
+		&say_msg("Wrong language setting. Aborting.");
+		exit 1;
+	}
 }
 
-for ($ARGV[1]) {
+for ($options{t}) {
 	s/[\\|*~<>^\(\)\[\]\{\}[:cntrl:]]/ /g;
 	s/\s+/ /g;
 	s/^\s|\s$//g;
-	die "No text passed for synthesis.\n" if (!length);
+	if (!length) {
+		&say_msg("No text passed for synthesis.");
+		exit 1;
+	}
 	$_ .= "." unless (/^.+[.,?!:;]$/);
 	@text = /.{1,100}[.,?!:;]|.{1,100}\s/g;
 }
@@ -58,7 +71,8 @@ foreach my $line (@text) {
 	my $request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	my $response = $ua->request($request);
 	if (!$response->is_success) {
-		die "Failed to fetch speech data.\n";
+		&say_msg("Failed to fetch speech data.");
+		exit 1;
 	} else {
 		my ($fh, $tmpname) = tempfile(
 			"tts_XXXXXX",
@@ -72,5 +86,35 @@ foreach my $line (@text) {
 		push(@filelist, $tmpname);
 	}
 }
-system($mpg123, "-q", @filelist) ==0 or die "Failed to playback speech data.\n";
-exit;
+
+if (defined $options{o}) {
+	if (system($mpg123, "-q", "-w", $options{o}, @filelist)) {
+		&say_msg("Failed to playback speech data.");
+		exit 1;
+	}
+} else {
+	if (system($mpg123, "-q", @filelist)) {
+		&say_msg("Failed to write sound file.");
+		exit 1;
+	}
+}
+
+exit 0;
+
+sub say_msg {
+	print @_, "\n" if (!defined $options{q});
+}
+
+sub VERSION_MESSAGE {
+	print "Text to speech synthesis using google voice.\n\n",
+		 "Usage: $0 [options] -t [text]\n\n",
+		 "Supported options:\n",
+		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
+		 " -o <filename>  write output as WAV file\n",
+		 " -q             quiet (Don't print any messages or warnings)\n",
+		 " -h             this help message\n\n",
+		 "Examples:\n",
+		 "$0 -l en -t \"Hello world\"\n Have the synthesized speech played back to the user.\n",
+		 "$0 -o hello.wav -l en -t \"Hello world\"\n Save the synthesized speech as a wav file.\n";
+	exit 1;
+}
