@@ -75,31 +75,16 @@ my $maxlen    = 2048;
 my $url       = "http://translate.google.com/translate_tts";
 my $sox       = `/usr/bin/which sox`;
 my $mpg123    = `/usr/bin/which mpg123`;
-my %lang_list = ("Afrikaans", "af", "Albanian", "sq", "Amharic", "am", "Arabic", "ar",
-	"Armenian", "hy", "Azerbaijani", "az", "Basque", "eu", "Belarusian", "be", "Bengali", "bn",
-	"Bihari", "bh", "Bosnian", "bs", "Breton", "br", "Bulgarian", "bg", "Cambodian", "km",
-	"Catalan", "ca", "Chinese (Simplified)", "zh-CN", "Chinese (Traditional)", "zh-TW",
-	"Corsican", "co", "Croatian", "hr", "Czech", "cs", "Danish", "da", "Dutch", "nl",
-	"English", "en", "Esperanto", "eo", "Estonian", "et", "Faroese", "fo", "Filipino", "tl",
-	"Finnish", "fi", "French", "fr", "Frisian", "fy", "Galician", "gl", "Georgian", "ka",
-	"German", "de", "Greek", "el", "Guarani", "gn", "Gujarati", "gu", "Hacker", "xx-hacker",
-	"Hausa", "ha", "Hebrew", "iw", "Hindi", "hi", "Hungarian", "hu", "Icelandic", "is",
-	"Indonesian", "id", "Interlingua", "ia", "Irish", "ga", "Italian", "it", "Japanese", "ja",
-	"Javanese", "jw", "Kannada", "kn", "Kazakh", "kk", "Kinyarwanda", "rw", "Kirundi", "rn",
-	"Klingon", "xx-klingon", "Korean", "ko", "Kurdish", "ku", "Kyrgyz", "ky", "Laothian", "lo",
-	"Latin", "la", "Latvian", "lv", "Lingala", "ln", "Lithuanian", "lt", "Macedonian", "mk",
-	"Malagasy", "mg", "Malay", "ms", "Malayalam", "ml", "Maltese", "mt", "Maori", "mi",
-	"Marathi", "mr", "Moldavian", "mo", "Mongolian", "mn", "Montenegrin", "sr-ME", "Nepali", "ne",
-	"Norwegian", "no", "Norwegian (Nynorsk)", "nn", "Occitan", "oc", "Oriya", "or", "Oromo", "om",
-	"Pashto", "ps", "Persian", "fa", "Pirate", "xx-pirate", "Polish", "pl", "Portuguese (Brazil)", "pt-BR",
-	"Portuguese (Portugal)", "pt-PT", "Portuguese", "pt", "Punjabi", "pa", "Quechua", "qu", "Romanian", "ro",
-	"Romansh", "rm", "Russian", "ru", "Scots Gaelic", "gd", "Serbian", "sr", "Serbo-Croatian", "sh",
-	"Sesotho", "st", "Shona", "sn", "Sindhi", "sd", "Sinhalese", "si", "Slovak", "sk",
-	"Slovenian", "sl", "Somali", "so", "Spanish", "es", "Sundanese", "su", "Swahili", "sw",
-	"Swedish", "sv", "Tajik", "tg", "Tamil", "ta", "Tatar", "tt", "Telugu", "te", "Thai", "th",
-	"Tigrinya", "ti", "Tonga", "to", "Turkish", "tr", "Turkmen", "tk", "Twi", "tw", "Uighur", "ug",
-	"Ukrainian", "uk", "Urdu", "ur", "Uzbek", "uz", "Vietnamese", "vi", "Welsh", "cy",
-	"Xhosa", "xh", "Yiddish", "yi", "Yoruba", "yo", "Zulu", "zu");
+my @lang_list = ("af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bh", "bs", "br",
+	"bg", "km", "ca", "zh-CN", "zh-TW", "co", "hr", "cs", "da", "nl", "en", "eo", "et",
+	"fo", "tl", "fi", "fr", "fy", "gl", "ka", "de", "el", "gn", "gu", "xx-hacker", "ha",
+	"iw", "hi", "hu", "is", "id", "ia", "ga", "it", "ja", "jw", "kn", "kk", "rw", "rn",
+	"xx-klingon", "ko", "ku", "ky", "lo", "la", "lv", "ln", "lt", "mk", "mg", "ms", "ml",
+	"mt", "mi", "mr", "mo", "mn", "sr-ME", "ne", "no", "nn", "oc", "or", "om", "ps", "fa",
+	"xx-pirate", "pl", "pt", "pt-BR", "pt-PT", "pa", "qu", "ro", "rm", "ru", "gd", "sr",
+	"sh", "st", "sn", "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tg", "ta",
+	"tt", "te", "th", "ti", "to", "tr", "tk", "tw", "ug", "uk", "ur", "uz", "vi", "cy",
+	"xh", "yi", "yo", "zu");
 
 # Store AGI input #
 while (<STDIN>) {
@@ -135,7 +120,7 @@ for ($AGI{arg_1}) {
 
 # Setting language and interrupt keys #
 if (length($AGI{arg_2})) {
-	if (grep { $_ eq $AGI{arg_2} } values %lang_list) {
+	if (grep { $_ eq $AGI{arg_2} } @lang_list) {
 		$lang = $AGI{arg_2};
 	} else {
 		die "$name Invalid language setting.\n";
