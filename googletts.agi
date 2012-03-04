@@ -147,10 +147,10 @@ if ($usecache && ((length($cachedir) + 32 + 6) > $maxlen)) {
 
 # Answer channel if not already answered #
 print "CHANNEL STATUS\n";
-@result = &checkresponse();
+@result = checkresponse();
 if ($result[0] == 4) {
 	print "ANSWER\n";
-	&checkresponse();
+	checkresponse();
 }
 
 $ua = LWP::UserAgent->new;
@@ -170,7 +170,7 @@ foreach my $line (@text) {
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
 			print STDERR "$name File already in cache.\n" if ($debug);
-			$res = &playback("$cachedir/$filename", $intkey);
+			$res = playback("$cachedir/$filename", $intkey);
 			last if ($res > 0);
 			next;
 		}
@@ -197,7 +197,7 @@ foreach my $line (@text) {
 		or die "$name $sox failed: $?\n";
 
 	# Playback and save file in cache #
-	$res = &playback($tmpname, $intkey);
+	$res = playback($tmpname, $intkey);
 	if ($usecache) {
 		mkpath("$cachedir") unless (-d "$cachedir");
 		print STDERR "$name Saving file $filename to cache\n" if ($debug);
@@ -234,13 +234,13 @@ sub playback {
 	my @response;
 
 	print "STREAM FILE $file \"$keys\"\n";
-	@response = &checkresponse();
+	@response = checkresponse();
 	if ($response[0] >= 32 && chr($response[0]) =~ /[\w*#]/) {
 		print STDERR "$name Got digit ", chr($response[0]), "\n" if ($debug);
 		print "SET EXTENSION ", chr($response[0]), "\n";
-		&checkresponse();
+		checkresponse();
 		print "SET PRIORITY 1\n";
-		&checkresponse();
+		checkresponse();
 		return $response[0];
 	} elsif ($response[0] == -1) {
 		print STDERR "$name Failed to play $file.\n";

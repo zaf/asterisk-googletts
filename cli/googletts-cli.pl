@@ -16,8 +16,6 @@ use File::Temp qw(tempfile);
 use CGI::Util qw(escape);
 use LWP::UserAgent;
 
-&VERSION_MESSAGE() if (!@ARGV);
-
 my %options;
 my @text;
 my @filelist;
@@ -29,16 +27,16 @@ my $mpg123  = `/usr/bin/which mpg123`;
 getopts('o:l:t:hqs', \%options);
 
 # Dislpay help messages #
-&VERSION_MESSAGE() if (defined $options{h});
-&lang_list("dislpay") if (defined $options{s});
+VERSION_MESSAGE() if (defined $options{h} || !@ARGV);
+lang_list("dislpay") if (defined $options{s});
 
 if (!defined $options{t}) {
-	&say_msg("No text passed for synthesis. Aborting.");
+	say_msg("No text passed for synthesis. Aborting.");
 	exit 1;
 }
 
 if (!$mpg123) {
-	&say_msg("mpg123 is missing. Aborting.");
+	say_msg("mpg123 is missing. Aborting.");
 	exit 1;
 }
 chomp($mpg123);
@@ -49,7 +47,7 @@ if (defined $options{l}) {
 	if (grep { $_ eq $options{l} } values %lang_list) {
 		$lang = $options{l};
 	} else {
-		&say_msg("Invalid language setting. Aborting.");
+		say_msg("Invalid language setting. Aborting.");
 		exit 1;
 	}
 }
@@ -60,7 +58,7 @@ for ($options{t}) {
 	s/\s+/ /g;
 	s/^\s|\s$//g;
 	if (!length) {
-		&say_msg("No text passed for synthesis.");
+		say_msg("No text passed for synthesis.");
 		exit 1;
 	}
 	$_ .= "." unless (/^.+[.,?!:;]$/);
@@ -79,7 +77,7 @@ foreach my $line (@text) {
 	my $request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	my $response = $ua->request($request);
 	if (!$response->is_success) {
-		&say_msg("Failed to fetch speech data.");
+		say_msg("Failed to fetch speech data.");
 		exit 1;
 	} else {
 		my ($fh, $tmpname) = tempfile(
@@ -98,13 +96,13 @@ foreach my $line (@text) {
 if (defined $options{o}) {
 # Play speech data back to the user #
 	if (system($mpg123, "-q", "-w", $options{o}, @filelist)) {
-		&say_msg("Failed to playback speech data.");
+		say_msg("Failed to playback speech data.");
 		exit 1;
 	}
 } else {
 # Save speech data as wav file #
 	if (system($mpg123, "-q", @filelist)) {
-		&say_msg("Failed to write sound file.");
+		say_msg("Failed to write sound file.");
 		exit 1;
 	}
 }
