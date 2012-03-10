@@ -19,6 +19,8 @@ use LWP::UserAgent;
 my %options;
 my @text;
 my @filelist;
+my @mpgargs;
+my $samplerate;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
@@ -27,7 +29,7 @@ my $mpg123  = `/usr/bin/which mpg123`;
 
 VERSION_MESSAGE() if (!@ARGV);
 
-getopts('o:l:t:hqs', \%options);
+getopts('o:l:r:t:hqs', \%options);
 
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
@@ -52,6 +54,15 @@ if (defined $options{l}) {
 	} else {
 		say_msg("Invalid language setting. Aborting.");
 		exit 1;
+	}
+}
+
+if (defined $options{r}) {
+# set audio sampling rate  #
+	if ($options{r} =~ /\d+/) {
+		$samplerate = $options{r};
+	} else {
+		say_msg("Invalid sample rate, using default.");
 	}
 }
 
@@ -96,18 +107,18 @@ foreach my $line (@text) {
 	}
 }
 
+# Set mpg123 args and process sound file #
 if (defined $options{o}) {
-# Play speech data back to the user #
-	if (system($mpg123, "-q", "-w", $options{o}, @filelist)) {
-		say_msg("Failed to playback speech data.");
-		exit 1;
-	}
+	@mpgargs = ($mpg123, "-q", "-w", $options{o});
+	push(@mpgargs, ("-r", $samplerate)) if ($samplerate);
 } else {
-# Save speech data as wav file #
-	if (system($mpg123, "-q", @filelist)) {
-		say_msg("Failed to write sound file.");
-		exit 1;
-	}
+	@mpgargs = ($mpg123, "-q");
+}
+push(@mpgargs, @filelist);
+
+if (system(@mpgargs)) {
+	say_msg("Failed to process sound file.");
+	exit 1;
 }
 
 exit 0;
@@ -126,6 +137,7 @@ sub VERSION_MESSAGE {
 		 "Supported options:\n",
 		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
 		 " -o <filename>  write output as WAV file\n",
+		 " -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
 		 " -q             quiet (Don't print any messages or warnings)\n",
 		 " -h             this help message\n",
 		 " -s             suppoted languages list\n\n",
