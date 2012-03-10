@@ -21,6 +21,7 @@ my @text;
 my @filelist;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
+my $timeout = 10;
 my $url     = "http://translate.google.com/translate_tts";
 my $mpg123  = `/usr/bin/which mpg123`;
 
@@ -43,7 +44,7 @@ chomp($mpg123);
 
 if (defined $options{l}) {
 # check if language setting is valid #
-	my %lang_list = &lang_list("list");
+	my %lang_list = lang_list("list");
 	if (grep { $_ eq $options{l} } values %lang_list) {
 		$lang = $options{l};
 	} else {
@@ -67,7 +68,7 @@ for ($options{t}) {
 
 my $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
-$ua->timeout(10);
+$ua->timeout($timeout);
 
 foreach my $line (@text) {
 # Get speech data from google and save them in temp files #
@@ -111,7 +112,9 @@ exit 0;
 
 sub say_msg {
 # Print messages to user if 'quiet' flag is not set #
-	print @_, "\n" if (!defined $options{q});
+	my $message = shift;
+	print "$message\n" if (!defined $options{q});
+	return;
 }
 
 sub VERSION_MESSAGE {
