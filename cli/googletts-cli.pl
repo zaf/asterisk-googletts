@@ -25,10 +25,12 @@ my $timeout = 10;
 my $url     = "http://translate.google.com/translate_tts";
 my $mpg123  = `/usr/bin/which mpg123`;
 
+VERSION_MESSAGE() if (!@ARGV);
+
 getopts('o:l:t:hqs', \%options);
 
 # Dislpay help messages #
-VERSION_MESSAGE() if (defined $options{h} || !@ARGV);
+VERSION_MESSAGE() if (defined $options{h});
 lang_list("dislpay") if (defined $options{s});
 
 if (!defined $options{t}) {
