@@ -21,6 +21,7 @@ my @text;
 my @filelist;
 my @mpgargs;
 my $samplerate;
+my $input;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
@@ -29,22 +30,18 @@ my $mpg123  = `/usr/bin/which mpg123`;
 
 VERSION_MESSAGE() if (!@ARGV);
 
-getopts('o:l:r:t:hqs', \%options);
+getopts('o:l:r:t:f:hqs', \%options);
 
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
 lang_list("dislpay") if (defined $options{s});
-
-if (!defined $options{t}) {
-	say_msg("No text passed for synthesis. Aborting.");
-	exit 1;
-}
 
 if (!$mpg123) {
 	say_msg("mpg123 is missing. Aborting.");
 	exit 1;
 }
 chomp($mpg123);
+@mpgargs = ($mpg123, "-q");
 
 if (defined $options{l}) {
 # check if language setting is valid #
@@ -66,9 +63,24 @@ if (defined $options{r}) {
 	}
 }
 
-for ($options{t}) {
+if (defined $options{t}) {
+	$input = $options{t};
+} elsif (defined $options{f}) {
+	if (open(my $fh, "<", "$options{f}")) {
+		$input = do { local $/; <$fh> };
+		close($fh);
+	} else {
+		say_msg("Cant read file $options{f}");
+		exit 1;
+	}
+} else {
+	say_msg("No text passed for synthesis.");
+	exit 1;
+}
+
+for ($input) {
 # Split input to comply with google tts requirements #
-	s/[\\|*~<>^\(\)\[\]\{\}[:cntrl:]]/ /g;
+	s/[\\|*~<>^\n\(\)\[\]\{\}[:cntrl:]]/ /g;
 	s/\s+/ /g;
 	s/^\s|\s$//g;
 	if (!length) {
@@ -100,7 +112,10 @@ foreach my $line (@text) {
 			DIR    => $tmpdir,
 			UNLINK => 1,
 		);
-		open($fh, ">", "$tmpname") or die "Unable to open file: $!";
+		if (!open($fh, ">", "$tmpname")) {
+			say_msg("Cant read temp file $tmpname");
+			exit 1;
+		}
 		print $fh $response->content;
 		close $fh;
 		push(@filelist, $tmpname);
@@ -108,12 +123,8 @@ foreach my $line (@text) {
 }
 
 # Set mpg123 args and process sound file #
-if (defined $options{o}) {
-	@mpgargs = ($mpg123, "-q", "-w", $options{o});
-	push(@mpgargs, ("-r", $samplerate)) if ($samplerate);
-} else {
-	@mpgargs = ($mpg123, "-q");
-}
+push(@mpgargs, ("-w", $options{o})) if (defined $options{o});
+push(@mpgargs, ("-r", $samplerate)) if ($samplerate);
 push(@mpgargs, @filelist);
 
 if (system(@mpgargs)) {
@@ -126,15 +137,16 @@ exit 0;
 sub say_msg {
 # Print messages to user if 'quiet' flag is not set #
 	my $message = shift;
-	print "$message\n" if (!defined $options{q});
+	warn "$message\n" if (!defined $options{q});
 	return;
 }
 
 sub VERSION_MESSAGE {
 # Help message #
 	print "Text to speech synthesis using google voice.\n\n",
-		 "Usage: $0 [options] -t [text]\n\n",
 		 "Supported options:\n",
+		 " -t <text>      text string to synthesize\n",
+		 " -f <file>      text file to synthesize\n",
 		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
 		 " -o <filename>  write output as WAV file\n",
 		 " -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
