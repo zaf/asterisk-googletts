@@ -25,6 +25,7 @@
 # can be set up by altering the following variables:
 # Default langeuage: $lang
 # Sample rate:       $samplerate
+# Speed factor:      $speed
 # Chace:             $usecache
 # Chache directory:  $cachedir
 #
@@ -47,6 +48,9 @@ my $lang = "en";
 
 # Output audio sample rate      #
 my $samplerate = 8000;
+
+# Output speed factor           #
+my $speed = 1.2;
 
 # Use of cache mechanism        #
 my $usecache = 1;
@@ -73,6 +77,7 @@ my $intkey    = "";
 my $tmpdir    = "/tmp";
 my $maxlen    = 2048;
 my $url       = "http://translate.google.com/translate_tts";
+my $sox       = `/usr/bin/which sox`;
 my $mpg123    = `/usr/bin/which mpg123`;
 my @lang_list = ("af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bh", "bs", "br",
 	"bg", "km", "ca", "zh-CN", "zh-TW", "co", "hr", "cs", "da", "nl", "en", "eo", "et",
@@ -101,10 +106,10 @@ $name = " -- $AGI{request}:";
 #}
 
 # Abort if required programs not found. #
-die "$name mpg123 is missing. Aborting.\n" if (!$mpg123);
+die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 
-chomp($mpg123);
-warn "$name Found mpg123 in: $mpg123\n" if ($debug);
+chomp($sox, $mpg123);
+warn "$name Found sox in: $sox, mpg123 in: $mpg123\n" if ($debug);
 
 # Sanitising input #
 for ($AGI{arg_1}) {
@@ -189,9 +194,11 @@ foreach my $line (@text) {
 	print $fh $ua_response->content;
 	close $fh or warn "$name Failed to close file: $!\n";
 
-	# Convert mp3 file to 16bit 8Khz mono raw #
-	system($mpg123, "-q", "-r", $samplerate, "-O", "$tmpname.$fexten", $tmpname) == 0
+		# Convert mp3 file to 16bit 8Khz mono raw #
+	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
+	system($sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten",
+		"tempo", "-s", $speed) == 0 or die "$name $sox failed: $?\n";
 
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);

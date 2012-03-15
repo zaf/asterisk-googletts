@@ -18,51 +18,33 @@ use LWP::UserAgent;
 
 my %options;
 my @text;
-my @filelist;
-my @mpgargs;
+my @mp3list;
+my @soxargs;
 my $samplerate;
 my $input;
+my $speed   = 1.2;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
 my $url     = "http://translate.google.com/translate_tts";
 my $mpg123  = `/usr/bin/which mpg123`;
+my $sox     = `/usr/bin/which sox`;
 
 VERSION_MESSAGE() if (!@ARGV);
 
-getopts('o:l:r:t:f:hqs', \%options);
+getopts('o:l:r:t:f:s:hqv', \%options);
 
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
-lang_list("dislpay") if (defined $options{s});
+lang_list("dislpay") if (defined $options{v});
 
-if (!$mpg123) {
-	say_msg("mpg123 is missing. Aborting.");
+if (!$mpg123 || !$sox) {
+	say_msg("mpg123 or sox is missing. Aborting.");
 	exit 1;
 }
-chomp($mpg123);
-@mpgargs = ($mpg123, "-q");
+chomp($mpg123, $sox);
 
-if (defined $options{l}) {
-# check if language setting is valid #
-	my %lang_list = lang_list("list");
-	if (grep { $_ eq $options{l} } values %lang_list) {
-		$lang = $options{l};
-	} else {
-		say_msg("Invalid language setting. Aborting.");
-		exit 1;
-	}
-}
-
-if (defined $options{r}) {
-# set audio sampling rate  #
-	if ($options{r} =~ /\d+/) {
-		$samplerate = $options{r};
-	} else {
-		say_msg("Invalid sample rate, using default.");
-	}
-}
-
+# Get input text #
 if (defined $options{t}) {
 	$input = $options{t};
 } elsif (defined $options{f}) {
@@ -76,6 +58,35 @@ if (defined $options{t}) {
 } else {
 	say_msg("No text passed for synthesis.");
 	exit 1;
+}
+
+if (defined $options{l}) {
+# check if language setting is valid #
+	my %lang_list = lang_list("list");
+	if (grep { $_ eq $options{l} } values %lang_list) {
+		$lang = $options{l};
+	} else {
+		say_msg("Invalid language setting. Aborting.");
+		exit 1;
+	}
+}
+
+if (defined $options{r}) {
+# set audio sample rate #
+	if ($options{r} =~ /\d+/) {
+		$samplerate = $options{r};
+	} else {
+		say_msg("Invalid sample rate, using default.");
+	}
+}
+
+if (defined $options{s}) {
+# set speed factor #
+	if ($options{s} =~ /\d+/) {
+		$speed = $options{s};
+	} else {
+		say_msg("Invalind speed factor, using default.");
+	}
 }
 
 for ($input) {
@@ -106,29 +117,48 @@ foreach my $line (@text) {
 		say_msg("Failed to fetch speech data.");
 		exit 1;
 	} else {
-		my ($fh, $tmpname) = tempfile(
+		my ($mp3fh, $mp3name) = tempfile(
 			"tts_XXXXXX",
 			SUFFIX => ".mp3",
 			DIR    => $tmpdir,
 			UNLINK => 1,
 		);
-		if (!open($fh, ">", "$tmpname")) {
-			say_msg("Cant read temp file $tmpname");
+		if (!open($mp3fh, ">", "$mp3name")) {
+			say_msg("Cant read temp file $mp3name");
 			exit 1;
 		}
-		print $fh $response->content;
-		close $fh;
-		push(@filelist, $tmpname);
+		print $mp3fh $response->content;
+		close $mp3fh;
+		push(@mp3list, $mp3name);
 	}
 }
 
-# Set mpg123 args and process sound file #
-push(@mpgargs, ("-w", $options{o})) if (defined $options{o});
-push(@mpgargs, ("-r", $samplerate)) if ($samplerate);
-push(@mpgargs, @filelist);
+# create a temp wav file to concatenate all sound data #
+my ($wav_fh, $wav_name) = tempfile(
+	"tts_XXXXXX",
+	SUFFIX => ".wav",
+	DIR    => $tmpdir,
+	UNLINK => 1,
+);
 
-if (system(@mpgargs)) {
-	say_msg("Failed to process sound file.");
+# decode mp3s and concatenate #
+if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
+	say_msg("mpg123 failed to process sound file.");
+	exit 1;
+}
+
+# Sex sox args and process wav file #
+@soxargs = ($sox, $wav_name, "-q");
+if (defined $options{o}) {
+	push(@soxargs, $options{o});
+} else {
+	push(@soxargs, "-d");
+}
+push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
+push(@soxargs, ("rate", "-h", $samplerate)) if ($samplerate);
+
+if (system(@soxargs)) {
+	say_msg("sox failed to process sound file.");
 	exit 1;
 }
 
@@ -137,7 +167,7 @@ exit 0;
 sub say_msg {
 # Print messages to user if 'quiet' flag is not set #
 	my $message = shift;
-	warn "$message\n" if (!defined $options{q});
+	warn "$0: $message\n" if (!defined $options{q});
 	return;
 }
 
@@ -150,9 +180,10 @@ sub VERSION_MESSAGE {
 		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
 		 " -o <filename>  write output as WAV file\n",
 		 " -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
+		 " -s <factor>    specify the output speed factor (default 1.2)\n",
 		 " -q             quiet (Don't print any messages or warnings)\n",
 		 " -h             this help message\n",
-		 " -s             suppoted languages list\n\n",
+		 " -v             suppoted languages list\n\n",
 		 "Examples:\n",
 		 "$0 -l en -t \"Hello world\"\n Have the synthesized speech played back to the user.\n",
 		 "$0 -o hello.wav -l en -t \"Hello world\"\n Save the synthesized speech as a wav file.\n\n";
