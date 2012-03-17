@@ -28,6 +28,7 @@
 # Speed factor:      $speed
 # Chace:             $usecache
 # Chache directory:  $cachedir
+# SoX Version:       $sox_ver
 #
 
 use warnings;
@@ -58,6 +59,9 @@ my $usecache = 1;
 # Cache directory path          #
 my $cachedir = "/tmp";
 
+# SoX Version                   #
+my $sox_ver = 12;
+
 # Verbose debugging messages    #
 my $debug = 0;
 
@@ -72,6 +76,7 @@ my $tmpname;
 my $filename;
 my $fexten;
 my @result;
+my @soxargs;
 my $name;
 my $intkey    = "";
 my $tmpdir    = "/tmp";
@@ -110,6 +115,7 @@ die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 
 chomp($sox, $mpg123);
 warn "$name Found sox in: $sox, mpg123 in: $mpg123\n" if ($debug);
+$speed = ($sox_ver >= 14) ? $speed : 1/$speed;
 
 # Sanitising input #
 for ($AGI{arg_1}) {
@@ -197,8 +203,13 @@ foreach my $line (@text) {
 		# Convert mp3 file to 16bit 8Khz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
-	system($sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten",
-		"tempo", "-s", $speed) == 0 or die "$name $sox failed: $?\n";
+	@soxargs = ($sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
+	if ($sox_ver >= 14) {
+		push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
+	} else {
+		push(@soxargs, ("stretch", $speed, "200")) if ($speed != 1);
+	}
+	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
 
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);

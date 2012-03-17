@@ -29,6 +29,7 @@ my $timeout = 10;
 my $url     = "http://translate.google.com/translate_tts";
 my $mpg123  = `/usr/bin/which mpg123`;
 my $sox     = `/usr/bin/which sox`;
+my $sox_ver = 12;
 
 VERSION_MESSAGE() if (!@ARGV);
 
@@ -149,13 +150,15 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 
 # Sex sox args and process wav file #
 @soxargs = ($sox, $wav_name, "-q");
-if (defined $options{o}) {
-	push(@soxargs, $options{o});
+(defined $options{o}) ? push(@soxargs, $options{o}) : push(@soxargs, "-d");
+push(@soxargs, ("rate", $samplerate)) if ($samplerate);
+
+if ($sox_ver >= 14) {
+	push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 } else {
-	push(@soxargs, "-d");
+	$speed = 1/$speed;
+	push(@soxargs, ("stretch", $speed, 200)) if ($speed != 1);
 }
-push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
-push(@soxargs, ("rate", "-h", $samplerate)) if ($samplerate);
 
 if (system(@soxargs)) {
 	say_msg("sox failed to process sound file.");
@@ -167,7 +170,7 @@ exit 0;
 sub say_msg {
 # Print messages to user if 'quiet' flag is not set #
 	my $message = shift;
-	warn "$0: $message\n" if (!defined $options{q});
+	warn "$0: $message" if (!defined $options{q});
 	return;
 }
 
