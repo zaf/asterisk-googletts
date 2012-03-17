@@ -22,14 +22,13 @@ my @mp3list;
 my @soxargs;
 my $samplerate;
 my $input;
-my $speed   = 1;
+my $speed   = 1.2;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
 my $url     = "http://translate.google.com/translate_tts";
 my $mpg123  = `/usr/bin/which mpg123`;
 my $sox     = `/usr/bin/which sox`;
-my $sox_ver = 12;
 
 VERSION_MESSAGE() if (!@ARGV);
 
@@ -151,21 +150,11 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 # Sex sox args and process wav file #
 if (defined $options{o}) {
 	@soxargs = ($sox, "-q", $wav_name, $options{o});
+	push(@soxargs, ("rate", $samplerate)) if ($samplerate);
 } else {
-	$sox = `/usr/bin/which play`;
-	chomp($sox);
-	@soxargs = ($sox, "-q", $wav_name,);
+	@soxargs = ($sox, "-q", $wav_name, "-d");
 }
-
-if ($sox_ver >= 14) {
-	push(@soxargs, ("rate", $samplerate)) if ($samplerate && defined $options{o});
-	push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
-} else {
-	$speed = 1/$speed;
-	push(@soxargs, "-e") if (($samplerate && defined $options{o}) || $speed != 1);
-	push(@soxargs, ("rate", $samplerate)) if ($samplerate && defined $options{o});
-	push(@soxargs, ("stretch", $speed, 200)) if ($speed != 1);
-}
+push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 
 if (system(@soxargs)) {
 	say_msg("sox failed to process sound file.");
@@ -190,7 +179,7 @@ sub VERSION_MESSAGE {
 		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
 		 " -o <filename>  write output as WAV file\n",
 		 " -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
-		 " -s <factor>    specify the output speed factor\n",
+		 " -s <factor>    specify the output speed factor (default 1.2)\n",
 		 " -q             quiet (Don't print any messages or warnings)\n",
 		 " -h             this help message\n",
 		 " -v             suppoted languages list\n\n",

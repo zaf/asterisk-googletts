@@ -115,7 +115,6 @@ die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 
 chomp($sox, $mpg123);
 warn "$name Found sox in: $sox, mpg123 in: $mpg123\n" if ($debug);
-$speed = ($sox_ver >= 14) ? $speed : 1/$speed;
 
 # Sanitising input #
 for ($AGI{arg_1}) {
@@ -207,7 +206,7 @@ foreach my $line (@text) {
 	if ($sox_ver >= 14) {
 		push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 	} else {
-		push(@soxargs, ("stretch", $speed, "200")) if ($speed != 1);
+		push(@soxargs, ("stretch", 1/$speed, "200")) if ($speed != 1);
 	}
 	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
 
