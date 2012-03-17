@@ -22,7 +22,7 @@ my @mp3list;
 my @soxargs;
 my $samplerate;
 my $input;
-my $speed   = 1.2;
+my $speed   = 1;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
@@ -149,14 +149,21 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 }
 
 # Sex sox args and process wav file #
-@soxargs = ($sox, $wav_name, "-q");
-(defined $options{o}) ? push(@soxargs, $options{o}) : push(@soxargs, "-d");
-push(@soxargs, ("rate", $samplerate)) if ($samplerate);
+if (defined $options{o}) {
+	@soxargs = ($sox, "-q", $wav_name, $options{o});
+} else {
+	$sox = `/usr/bin/which play`;
+	chomp($sox);
+	@soxargs = ($sox, "-q", $wav_name,);
+}
 
 if ($sox_ver >= 14) {
+	push(@soxargs, ("rate", $samplerate)) if ($samplerate && defined $options{o});
 	push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 } else {
 	$speed = 1/$speed;
+	push(@soxargs, "-e") if (($samplerate && defined $options{o}) || $speed != 1);
+	push(@soxargs, ("rate", $samplerate)) if ($samplerate && defined $options{o});
 	push(@soxargs, ("stretch", $speed, 200)) if ($speed != 1);
 }
 
@@ -183,7 +190,7 @@ sub VERSION_MESSAGE {
 		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
 		 " -o <filename>  write output as WAV file\n",
 		 " -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
-		 " -s <factor>    specify the output speed factor (default 1.2)\n",
+		 " -s <factor>    specify the output speed factor\n",
 		 " -q             quiet (Don't print any messages or warnings)\n",
 		 " -h             this help message\n",
 		 " -v             suppoted languages list\n\n",
