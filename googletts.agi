@@ -199,7 +199,7 @@ foreach my $line (@text) {
 	print $fh $ua_response->content;
 	close $fh or warn "$name Failed to close file: $!\n";
 
-		# Convert mp3 file to 16bit 8Khz mono raw #
+		# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
 	@soxargs = ($sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");
@@ -209,6 +209,7 @@ foreach my $line (@text) {
 		push(@soxargs, ("stretch", 1/$speed, "200")) if ($speed != 1);
 	}
 	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
+	unlink "$tmpname.wav";
 
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);
@@ -216,8 +217,9 @@ foreach my $line (@text) {
 		mkpath("$cachedir") unless (-d "$cachedir");
 		warn "$name Saving file $filename to cache\n" if ($debug);
 		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
+	} else {
+		unlink "$tmpname.$fexten";
 	}
-	unlink glob "$tmpname*";
 	last if ($res > 0);
 }
 exit;

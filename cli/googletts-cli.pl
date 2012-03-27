@@ -109,7 +109,7 @@ $ua->timeout($timeout);
 foreach my $line (@text) {
 # Get speech data from google and save them in temp files #
 	$line =~ s/^\s+|\s+$//g;
-	last if (length($line) == 0);
+	next if (length($line) == 0);
 	$line = escape($line);
 	my $request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
 	my $response = $ua->request($request);
@@ -147,12 +147,12 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 	exit 1;
 }
 
-# Sex sox args and process wav file #
+# Set sox args and process wav file #
 if (defined $options{o}) {
 	@soxargs = ($sox, "-q", $wav_name, $options{o});
 	push(@soxargs, ("rate", $samplerate)) if ($samplerate);
 } else {
-	@soxargs = ($sox, "-q", $wav_name, "-d");
+	@soxargs = ($sox, "-q", $wav_name, "-t", "alsa", "-d");
 }
 push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 
