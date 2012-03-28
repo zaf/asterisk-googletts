@@ -39,6 +39,7 @@ use File::Path qw(mkpath);
 use Digest::MD5 qw(md5_hex);
 use CGI::Util qw(escape);
 use LWP::UserAgent;
+use LWP::ConnCache;
 $| = 1;
 
 # ----------------------------- #
@@ -164,6 +165,7 @@ if ($result[0] == 4) {
 
 $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
+$ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout(5);
 
 foreach my $line (@text) {
@@ -186,20 +188,17 @@ foreach my $line (@text) {
 	}
 	$line = escape($line);
 	warn "$name URL passed: $url?tl=$lang&q=$line\n" if ($debug);
-	my $ua_request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
-	my $ua_response = $ua->request($ua_request);
-	die "$name Failed to fetch file.\n" unless ($ua_response->is_success);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	open($fh, ">", "$tmpname") or die "$name Failed to open file: $!\n";
-	print $fh $ua_response->content;
-	close $fh or warn "$name Failed to close file: $!\n";
+	my $ua_request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
+	my $ua_response = $ua->request($ua_request, $tmpname);
+	die "$name Failed to fetch file.\n" unless ($ua_response->is_success);
 
-		# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
+	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
 	@soxargs = ($sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten");

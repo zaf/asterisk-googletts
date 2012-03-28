@@ -15,6 +15,7 @@ use Getopt::Std;
 use File::Temp qw(tempfile);
 use CGI::Util qw(escape);
 use LWP::UserAgent;
+use LWP::ConnCache;
 
 my %options;
 my @text;
@@ -104,6 +105,7 @@ for ($input) {
 
 my $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
+$ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
 foreach my $line (@text) {
@@ -111,37 +113,29 @@ foreach my $line (@text) {
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
 	$line = escape($line);
+	my ($mp3_fh, $mp3_name) = tempfile(
+		"tts_XXXXXX",
+		DIR    => $tmpdir,
+		SUFFIX => ".mp3",
+		UNLINK => 1
+	);
 	my $request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
-	my $response = $ua->request($request);
+	my $response = $ua->request($request, $mp3_name);
 	if (!$response->is_success) {
 		say_msg("Failed to fetch speech data.");
 		exit 1;
 	} else {
-		my ($mp3fh, $mp3name) = tempfile(
-			"tts_XXXXXX",
-			SUFFIX => ".mp3",
-			DIR    => $tmpdir,
-			UNLINK => 1,
-		);
-		if (!open($mp3fh, ">", "$mp3name")) {
-			say_msg("Cant read temp file $mp3name");
-			exit 1;
-		}
-		print $mp3fh $response->content;
-		close $mp3fh;
-		push(@mp3list, $mp3name);
+		push(@mp3list, $mp3_name);
 	}
 }
 
-# create a temp wav file to concatenate all sound data #
+# decode mp3s and concatenate #
 my ($wav_fh, $wav_name) = tempfile(
 	"tts_XXXXXX",
-	SUFFIX => ".wav",
 	DIR    => $tmpdir,
-	UNLINK => 1,
+	SUFFIX => ".wav",
+	UNLINK => 1
 );
-
-# decode mp3s and concatenate #
 if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 	say_msg("mpg123 failed to process sound file.");
 	exit 1;
