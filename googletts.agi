@@ -85,16 +85,6 @@ my $maxlen    = 2048;
 my $url       = "http://translate.google.com/translate_tts";
 my $sox       = `/usr/bin/which sox`;
 my $mpg123    = `/usr/bin/which mpg123`;
-my @lang_list = ("af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bh", "bs", "br",
-	"bg", "km", "ca", "zh-CN", "zh-TW", "co", "hr", "cs", "da", "nl", "en", "eo", "et",
-	"fo", "tl", "fi", "fr", "fy", "gl", "ka", "de", "el", "gn", "gu", "xx-hacker", "ha",
-	"iw", "hi", "hu", "is", "id", "ia", "ga", "it", "ja", "jw", "kn", "kk", "rw", "rn",
-	"xx-klingon", "ko", "ku", "ky", "lo", "la", "lv", "ln", "lt", "mk", "mg", "ms", "ml",
-	"mt", "mi", "mr", "mo", "mn", "sr-ME", "ne", "no", "nn", "oc", "or", "om", "ps", "fa",
-	"xx-pirate", "pl", "pt", "pt-BR", "pt-PT", "pa", "qu", "ro", "rm", "ru", "gd", "sr",
-	"sh", "st", "sn", "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tg", "ta",
-	"tt", "te", "th", "ti", "to", "tr", "tk", "tw", "ug", "uk", "ur", "uz", "vi", "cy",
-	"xh", "yi", "yo", "zu");
 
 # Store AGI input #
 while (<STDIN>) {
@@ -129,13 +119,8 @@ for ($AGI{arg_1}) {
 }
 
 # Setting language and interrupt keys #
-if (length($AGI{arg_2})) {
-	if (grep { $_ eq $AGI{arg_2} } @lang_list) {
-		$lang = $AGI{arg_2};
-	} else {
-		die "$name Invalid language setting.\n";
-	}
-}
+$lang = $AGI{arg_2} if (length($AGI{arg_2}));
+
 if (length($AGI{arg_3})) {
 	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
 	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);

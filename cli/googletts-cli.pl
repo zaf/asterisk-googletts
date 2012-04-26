@@ -61,16 +61,7 @@ if (defined $options{t}) {
 	exit 1;
 }
 
-if (defined $options{l}) {
-# check if language setting is valid #
-	my %lang_list = lang_list("list");
-	if (grep { $_ eq $options{l} } values %lang_list) {
-		$lang = $options{l};
-	} else {
-		say_msg("Invalid language setting. Aborting.");
-		exit 1;
-	}
-}
+$lang = $options{l} if (defined $options{l});
 
 if (defined $options{r}) {
 # set audio sample rate #
