@@ -23,13 +23,12 @@
 #
 # Parameters like default language, sample rate, caching and cache dir
 # can be set up by altering the following variables:
-# Default langeuage:   $lang
-# Sample rate:         $samplerate
-# Speed factor:        $speed
-# Normalization level: $level
-# Chace:               $usecache
-# Chache directory:    $cachedir
-# SoX Version:         $sox_ver
+# Default langeuage: $lang
+# Sample rate:       $samplerate
+# Speed factor:      $speed
+# Chace:             $usecache
+# Chache directory:  $cachedir
+# SoX Version:       $sox_ver
 #
 
 use warnings;
@@ -54,9 +53,6 @@ my $samplerate = 8000;
 
 # Output speed factor           #
 my $speed = 1.2;
-
-# Audio normalization level     #
-my $level = -3;
 
 # Use of cache mechanism        #
 my $usecache = 1;
@@ -199,8 +195,7 @@ foreach my $line (@text) {
 		or die "$name $mpg123 failed: $?\n";
 
 	@soxargs = (
-		$sox, "$tmpname.wav", "-q", "--norm=$level", "-r", $samplerate,
-		"-t", "raw", "$tmpname.$fexten"
+		$sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten"
 	);
 	if ($sox_ver >= 14) {
 		push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
