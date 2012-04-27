@@ -24,6 +24,7 @@ my @soxargs;
 my $samplerate;
 my $input;
 my $speed   = 1.2;
+my $level   = -3;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
@@ -33,7 +34,7 @@ my $sox     = `/usr/bin/which sox`;
 
 VERSION_MESSAGE() if (!@ARGV);
 
-getopts('o:l:r:t:f:s:hqv', \%options);
+getopts('o:l:r:t:f:n:s:hqv', \%options);
 
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
@@ -45,44 +46,10 @@ if (!$mpg123 || !$sox) {
 }
 chomp($mpg123, $sox);
 
-# Get input text #
-if (defined $options{t}) {
-	$input = $options{t};
-} elsif (defined $options{f}) {
-	if (open(my $fh, "<", "$options{f}")) {
-		$input = do { local $/; <$fh> };
-		close($fh);
-	} else {
-		say_msg("Cant read file $options{f}");
-		exit 1;
-	}
-} else {
-	say_msg("No text passed for synthesis.");
-	exit 1;
-}
-
-$lang = $options{l} if (defined $options{l});
-
-if (defined $options{r}) {
-# set audio sample rate #
-	if ($options{r} =~ /\d+/) {
-		$samplerate = $options{r};
-	} else {
-		say_msg("Invalid sample rate, using default.");
-	}
-}
-
-if (defined $options{s}) {
-# set speed factor #
-	if ($options{s} =~ /\d+/) {
-		$speed = $options{s};
-	} else {
-		say_msg("Invalind speed factor, using default.");
-	}
-}
+parse_options();
 
 for ($input) {
-# Split input to comply with google tts requirements #
+	# Split input to comply with google tts requirements #
 	s/[\\|*~<>^\n\(\)\[\]\{\}[:cntrl:]]/ /g;
 	s/\s+/ /g;
 	s/^\s|\s$//g;
@@ -101,7 +68,7 @@ $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
 foreach my $line (@text) {
-# Get speech data from google and save them in temp files #
+	# Get speech data from google and save them in temp files #
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
 	$line = escape($line);
@@ -134,13 +101,10 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 }
 
 # Set sox args and process wav file #
-if (defined $options{o}) {
-	@soxargs = ($sox, "-q", $wav_name, $options{o});
-	push(@soxargs, ("rate", $samplerate)) if ($samplerate);
-} else {
-	@soxargs = ($sox, "-q", $wav_name, "-t", "alsa", "-d");
-}
+@soxargs = ($sox, "-q", "--norm=$level", $wav_name);
+defined $options{o} ? push(@soxargs, ($options{o})) : push(@soxargs, ("-t", "alsa", "-d"));
 push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
+push(@soxargs, ("rate", $samplerate)) if ($samplerate);
 
 if (system(@soxargs)) {
 	say_msg("sox failed to process sound file.");
@@ -150,59 +114,138 @@ if (system(@soxargs)) {
 exit 0;
 
 sub say_msg {
-# Print messages to user if 'quiet' flag is not set #
-	my $message = shift;
-	warn "$0: $message" if (!defined $options{q});
+	# Print messages to user if 'quiet' flag is not set #
+	my @message = @_;
+	warn @message if (!defined $options{q});
+	return;
+}
+
+sub parse_options {
+	# Get input text #
+	if (defined $options{t}) {
+		$input = $options{t};
+	} elsif (defined $options{f}) {
+		if (open(my $fh, "<", "$options{f}")) {
+			$input = do { local $/; <$fh> };
+			close($fh);
+		} else {
+			say_msg("Cant read file $options{f}");
+			exit 1;
+		}
+	} else {
+		say_msg("No text passed for synthesis.");
+		exit 1;
+	}
+	# set the speech language #
+	if (defined $options{l}) {
+		$options{l} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2,6})?$/ ? $lang = $options{l}
+			: say_msg("Invalid language setting, using default.");
+	}
+	# set audio sample rate #
+	if (defined $options{r}) {
+		$options{r} =~ /\d+/ ? $samplerate = $options{r}
+			: say_msg("Invalid sample rate, using default.");
+	}
+	# set the audio normalisation level #
+	if (defined $options{n}) {
+		$options{n} =~ /\d+/ ? $level = $options{n}
+			: say_msg("Invalind normalisation level, using default.");
+	}
+	# set speed factor #
+	if (defined $options{s}) {
+		$options{s} =~ /\d+/ ? $speed = $options{s}
+			: say_msg("Invalind speed factor, using default.");
+	}
 	return;
 }
 
 sub VERSION_MESSAGE {
-# Help message #
+	# Help message #
 	print "Text to speech synthesis using google voice.\n\n",
-		 "Supported options:\n",
-		 " -t <text>      text string to synthesize\n",
-		 " -f <file>      text file to synthesize\n",
-		 " -l <lang>      specify the language to use, defaults to 'en' (English)\n",
-		 " -o <filename>  write output as WAV file\n",
-		 " -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
-		 " -s <factor>    specify the output speed factor (default 1.2)\n",
-		 " -q             quiet (Don't print any messages or warnings)\n",
-		 " -h             this help message\n",
-		 " -v             suppoted languages list\n\n",
-		 "Examples:\n",
-		 "$0 -l en -t \"Hello world\"\n Have the synthesized speech played back to the user.\n",
-		 "$0 -o hello.wav -l en -t \"Hello world\"\n Save the synthesized speech as a wav file.\n\n";
+		"Supported options:\n",
+		" -t <text>      text string to synthesize\n",
+		" -f <file>      text file to synthesize\n",
+		" -l <lang>      specify the language to use, defaults to 'en' (English)\n",
+		" -o <filename>  write output as WAV file\n",
+		" -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
+		" -s <factor>    specify the output speed factor (default 1.2)\n",
+		" -n <dB-level>  normalise the audio to the given level (default -3)\n",
+		" -q             quiet (Don't print any messages or warnings)\n",
+		" -h             this help message\n",
+		" -v             suppoted languages list\n\n",
+		"Examples:\n",
+		"$0 -l en -t \"Hello world\"\n Have the synthesized speech played back to the user.\n",
+		"$0 -o hello.wav -l en -t \"Hello world\"\n Save the synthesized speech as a wav file.\n\n";
 	exit 1;
 }
 
 sub lang_list {
-# Display the list of supported languages to the user or return it as a hash #
-	my $opt = shift;
-	my %sup_lang = ("Afrikaans", "af", "Albanian", "sq", "Amharic", "am", "Arabic", "ar",
-		"Armenian", "hy", "Azerbaijani", "az", "Basque", "eu", "Belarusian", "be", "Bengali", "bn",
-		"Bihari", "bh", "Bosnian", "bs", "Breton", "br", "Bulgarian", "bg", "Cambodian", "km",
-		"Catalan", "ca", "Chinese (Simplified)", "zh-CN", "Chinese (Traditional)", "zh-TW",
-		"Corsican", "co", "Croatian", "hr", "Czech", "cs", "Danish", "da", "Dutch", "nl",
-		"English", "en", "Esperanto", "eo", "Estonian", "et", "Faroese", "fo", "Filipino", "tl",
-		"Finnish", "fi", "French", "fr", "Frisian", "fy", "Galician", "gl", "Georgian", "ka",
-		"German", "de", "Greek", "el", "Guarani", "gn", "Gujarati", "gu", "Hacker", "xx-hacker",
-		"Hausa", "ha", "Hebrew", "iw", "Hindi", "hi", "Hungarian", "hu", "Icelandic", "is",
-		"Indonesian", "id", "Interlingua", "ia", "Irish", "ga", "Italian", "it", "Japanese", "ja",
-		"Javanese", "jw", "Kannada", "kn", "Kazakh", "kk", "Kinyarwanda", "rw", "Kirundi", "rn",
-		"Klingon", "xx-klingon", "Korean", "ko", "Kurdish", "ku", "Kyrgyz", "ky", "Laothian", "lo",
-		"Latin", "la", "Latvian", "lv", "Lingala", "ln", "Lithuanian", "lt", "Macedonian", "mk",
-		"Malagasy", "mg", "Malay", "ms", "Malayalam", "ml", "Maltese", "mt", "Maori", "mi",
-		"Marathi", "mr", "Moldavian", "mo", "Mongolian", "mn", "Montenegrin", "sr-ME", "Nepali", "ne",
-		"Norwegian", "no", "Norwegian (Nynorsk)", "nn", "Occitan", "oc", "Oriya", "or", "Oromo", "om",
-		"Pashto", "ps", "Persian", "fa", "Pirate", "xx-pirate", "Polish", "pl", "Portuguese (Brazil)", "pt-BR",
-		"Portuguese (Portugal)", "pt-PT", "Portuguese", "pt", "Punjabi", "pa", "Quechua", "qu", "Romanian", "ro",
-		"Romansh", "rm", "Russian", "ru", "Scots Gaelic", "gd", "Serbian", "sr", "Serbo-Croatian", "sh",
-		"Sesotho", "st", "Shona", "sn", "Sindhi", "sd", "Sinhalese", "si", "Slovak", "sk",
-		"Slovenian", "sl", "Somali", "so", "Spanish", "es", "Sundanese", "su", "Swahili", "sw",
-		"Swedish", "sv", "Tajik", "tg", "Tamil", "ta", "Tatar", "tt", "Telugu", "te", "Thai", "th",
-		"Tigrinya", "ti", "Tonga", "to", "Turkish", "tr", "Turkmen", "tk", "Twi", "tw", "Uighur", "ug",
-		"Ukrainian", "uk", "Urdu", "ur", "Uzbek", "uz", "Vietnamese", "vi", "Welsh", "cy",
-		"Xhosa", "xh", "Yiddish", "yi", "Yoruba", "yo", "Zulu", "zu");
+	# Display the list of supported languages to the user or return it as a hash #
+	my $opt      = shift;
+	my %sup_lang = (
+		"Afrikaans",             "af",         "Albanian",             "sq",
+		"Amharic",               "am",         "Arabic",               "ar",
+		"Armenian",              "hy",         "Azerbaijani",          "az",
+		"Basque",                "eu",         "Belarusian",           "be",
+		"Bengali",               "bn",         "Bihari",               "bh",
+		"Bosnian",               "bs",         "Breton",               "br",
+		"Bulgarian",             "bg",         "Cambodian",            "km",
+		"Catalan",               "ca",         "Chinese (Simplified)", "zh-CN",
+		"Chinese (Traditional)", "zh-TW",      "Corsican",             "co",
+		"Croatian",              "hr",         "Czech",                "cs",
+		"Danish",                "da",         "Dutch",                "nl",
+		"English",               "en",         "Esperanto",            "eo",
+		"Estonian",              "et",         "Faroese",              "fo",
+		"Filipino",              "tl",         "Finnish",              "fi",
+		"French",                "fr",         "Frisian",              "fy",
+		"Galician",              "gl",         "Georgian",             "ka",
+		"German",                "de",         "Greek",                "el",
+		"Guarani",               "gn",         "Gujarati",             "gu",
+		"Hacker",                "xx-hacker",  "Hausa",                "ha",
+		"Hebrew",                "iw",         "Hindi",                "hi",
+		"Hungarian",             "hu",         "Icelandic",            "is",
+		"Indonesian",            "id",         "Interlingua",          "ia",
+		"Irish",                 "ga",         "Italian",              "it",
+		"Japanese",              "ja",         "Javanese",             "jw",
+		"Kannada",               "kn",         "Kazakh",               "kk",
+		"Kinyarwanda",           "rw",         "Kirundi",              "rn",
+		"Klingon",               "xx-klingon", "Korean",               "ko",
+		"Kurdish",               "ku",         "Kyrgyz",               "ky",
+		"Laothian",              "lo",         "Latin",                "la",
+		"Latvian",               "lv",         "Lingala",              "ln",
+		"Lithuanian",            "lt",         "Macedonian",           "mk",
+		"Malagasy",              "mg",         "Malay",                "ms",
+		"Malayalam",             "ml",         "Maltese",              "mt",
+		"Maori",                 "mi",         "Marathi",              "mr",
+		"Moldavian",             "mo",         "Mongolian",            "mn",
+		"Montenegrin",           "sr-ME",      "Nepali",               "ne",
+		"Norwegian",             "no",         "Norwegian (Nynorsk)",  "nn",
+		"Occitan",               "oc",         "Oriya",                "or",
+		"Oromo",                 "om",         "Pashto",               "ps",
+		"Persian",               "fa",         "Pirate",               "xx-pirate",
+		"Polish",                "pl",         "Portuguese (Brazil)",  "pt-BR",
+		"Portuguese (Portugal)", "pt-PT",      "Portuguese",           "pt",
+		"Punjabi",               "pa",         "Quechua",              "qu",
+		"Romanian",              "ro",         "Romansh",              "rm",
+		"Russian",               "ru",         "Scots Gaelic",         "gd",
+		"Serbian",               "sr",         "Serbo-Croatian",       "sh",
+		"Sesotho",               "st",         "Shona",                "sn",
+		"Sindhi",                "sd",         "Sinhalese",            "si",
+		"Slovak",                "sk",         "Slovenian",            "sl",
+		"Somali",                "so",         "Spanish",              "es",
+		"Sundanese",             "su",         "Swahili",              "sw",
+		"Swedish",               "sv",         "Tajik",                "tg",
+		"Tamil",                 "ta",         "Tatar",                "tt",
+		"Telugu",                "te",         "Thai",                 "th",
+		"Tigrinya",              "ti",         "Tonga",                "to",
+		"Turkish",               "tr",         "Turkmen",              "tk",
+		"Twi",                   "tw",         "Uighur",               "ug",
+		"Ukrainian",             "uk",         "Urdu",                 "ur",
+		"Uzbek",                 "uz",         "Vietnamese",           "vi",
+		"Welsh",                 "cy",         "Xhosa",                "xh",
+		"Yiddish",               "yi",         "Yoruba",               "yo",
+		"Zulu",                  "zu"
+	);
 
 	if ($opt eq "dislpay") {
 		print "Supported Languages list:\n";
