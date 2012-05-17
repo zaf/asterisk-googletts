@@ -49,7 +49,7 @@ $| = 1;
 my $lang = "en";
 
 # Output audio sample rate      #
-my $samplerate = 8000;
+my $samplerate = 0;
 
 # Output speed factor           #
 my $speed = 1.2;
@@ -96,11 +96,6 @@ while (<STDIN>) {
 
 $name = " -- $AGI{request}:";
 
-#if ($debug) {
-#	warn "$name AGI Environment Dump:\n";
-#	warn "$name $_ = $AGI{$_}\n" foreach (sort keys %AGI);
-#}
-
 # Abort if required programs not found. #
 die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 
@@ -132,14 +127,6 @@ if (length($AGI{arg_3})) {
 	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
 }
 
-# Setting filename extension according to sample rate. #
-if ($samplerate == 16000) {
-	$fexten = "sln16";
-} else {
-	$fexten     = "sln";
-	$samplerate = 8000;
-}
-
 # Check cache path size: dir length + md5 + file extension #
 if ($usecache && ((length($cachedir) + 32 + 6) > $maxlen)) {
 	warn "$name Cache path size exceeds limit. Disabling cache.\n";
@@ -152,6 +139,16 @@ print "CHANNEL STATUS\n";
 if ($result[0] == 4) {
 	print "ANSWER\n";
 	checkresponse();
+}
+
+# Setting filename extension according to sample rate. #
+if ($samplerate == 0) {
+	($fexten, $samplerate) = detect_format();
+} elsif ($samplerate == 16000) {
+	$fexten    = "sln16";
+} else {
+	$fexten     = "sln";
+	$samplerate = 8000;
 }
 
 $ua = LWP::UserAgent->new;
@@ -169,7 +166,7 @@ foreach my $line (@text) {
 			"$name Caching: $usecache, Cache dir: $cachedir\n";
 	}
 	if ($usecache) {
-		$filename = md5_hex($line);
+		$filename = md5_hex("$line.$speed");
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
 			warn "$name File already in cache.\n" if ($debug);
@@ -258,6 +255,24 @@ sub playback {
 		return -1;
 	}
 	return 0;
+}
+
+sub detect_format {
+	print "GET FULL VARIABLE \${CHANNEL(audionativeformat)}\n";
+	my @reply = checkresponse();
+	if ($reply[0] == 1 && $reply[1] =~ /silk12|sln12/) {
+		return ("sln12", 12000);
+	} elsif ($reply[0] == 1 && $reply[1] =~ /g722|speex16|slin16|silk16|siren7/) {
+		return ("sln16", 16000);
+	} elsif ($reply[0] == 1 && $reply[1] =~ /speex32|slin32|celt32|siren14/) {
+		return ("sln32", 32000);
+	} elsif ($reply[0] == 1 && $reply[1] =~ /celt44|slin44/) {
+		return ("sln44", 44100);
+	} elsif ($reply[0] == 1 && $reply[1] =~ /celt48|slin48/) {
+		return ("sln48", 48000);
+	} else {
+		return ("sln", 8000);
+	}
 }
 
 sub int_handler {
