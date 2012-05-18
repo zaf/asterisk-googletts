@@ -24,7 +24,6 @@ my @soxargs;
 my $samplerate;
 my $input;
 my $speed   = 1.2;
-my $level   = -3;
 my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
@@ -34,7 +33,7 @@ my $sox     = `/usr/bin/which sox`;
 
 VERSION_MESSAGE() if (!@ARGV);
 
-getopts('o:l:r:t:f:n:s:hqv', \%options);
+getopts('o:l:r:t:f:s:hqv', \%options);
 
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
@@ -101,7 +100,7 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 }
 
 # Set sox args and process wav file #
-@soxargs = ($sox, "-q", "--norm=$level", $wav_name);
+@soxargs = ($sox, "-q", $wav_name);
 defined $options{o} ? push(@soxargs, ($options{o})) : push(@soxargs, ("-t", "alsa", "-d"));
 push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 push(@soxargs, ("rate", $samplerate)) if ($samplerate);
@@ -146,11 +145,6 @@ sub parse_options {
 		$options{r} =~ /\d+/ ? $samplerate = $options{r}
 			: say_msg("Invalid sample rate, using default.");
 	}
-	# set the audio normalisation level #
-	if (defined $options{n}) {
-		$options{n} =~ /\d+/ ? $level = $options{n}
-			: say_msg("Invalind normalisation level, using default.");
-	}
 	# set speed factor #
 	if (defined $options{s}) {
 		$options{s} =~ /\d+/ ? $speed = $options{s}
@@ -169,7 +163,6 @@ sub VERSION_MESSAGE {
 		" -o <filename>  write output as WAV file\n",
 		" -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
 		" -s <factor>    specify the output speed factor (default 1.2)\n",
-		" -n <dB-level>  normalise the audio to the given level (default -3)\n",
 		" -q             quiet (Don't print any messages or warnings)\n",
 		" -h             this help message\n",
 		" -v             suppoted languages list\n\n",
