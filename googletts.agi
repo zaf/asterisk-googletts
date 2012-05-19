@@ -142,14 +142,13 @@ if ($result[0] == 4) {
 }
 
 # Setting filename extension according to sample rate. #
-if ($samplerate == 0) {
-	($fexten, $samplerate) = detect_format();
-} elsif ($samplerate == 16000) {
-	$fexten    = "sln16";
-} else {
-	$fexten     = "sln";
-	$samplerate = 8000;
-}
+if    ($samplerate == 0)     { ($fexten, $samplerate) = detect_format(); }
+elsif ($samplerate == 12000) { $fexten = "sln12"; }
+elsif ($samplerate == 16000) { $fexten = "sln16"; }
+elsif ($samplerate == 32000) { $fexten = "sln32"; }
+elsif ($samplerate == 44100) { $fexten = "sln44"; }
+elsif ($samplerate == 48000) { $fexten = "sln48"; }
+else                         { ($fexten, $samplerate) =  ("sln", 8000); }
 
 $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
@@ -225,14 +224,14 @@ sub checkresponse {
 		$input =~ /result=(-?\d+)\s?(.*)$/;
 		if (!length($1)) {
 			warn "$name Command failed: $input\n";
-			@values = ("-1");
+			@values = (-1, -1);
 		} else {
 			warn "$name Command returned: $input\n" if ($debug);
 			@values = ("$1", "$2");
 		}
 	} else {
 		warn "$name Unexpected result: $input\n";
-		@values = ("-1");
+		@values = (-1, -1);
 	}
 	return @values;
 }
@@ -258,21 +257,23 @@ sub playback {
 }
 
 sub detect_format {
+	my @format;
 	print "GET FULL VARIABLE \${CHANNEL(audionativeformat)}\n";
 	my @reply = checkresponse();
-	if ($reply[0] == 1 && $reply[1] =~ /silk12|sln12/) {
-		return ("sln12", 12000);
-	} elsif ($reply[0] == 1 && $reply[1] =~ /g722|speex16|slin16|silk16|siren7/) {
-		return ("sln16", 16000);
-	} elsif ($reply[0] == 1 && $reply[1] =~ /speex32|slin32|celt32|siren14/) {
-		return ("sln32", 32000);
-	} elsif ($reply[0] == 1 && $reply[1] =~ /celt44|slin44/) {
-		return ("sln44", 44100);
-	} elsif ($reply[0] == 1 && $reply[1] =~ /celt48|slin48/) {
-		return ("sln48", 48000);
+	if ($reply[1] =~ /silk12|sln12/) {
+		@format = ("sln12", 12000);
+	} elsif ($reply[1] =~ /g722|speex16|slin16|silk16|siren7/) {
+		@format = ("sln16", 16000);
+	} elsif ($reply[1] =~ /speex32|slin32|celt32|siren14/) {
+		@format = ("sln32", 32000);
+	} elsif ($reply[1] =~ /celt44|slin44/) {
+		@format = ("sln44", 44100);
+	} elsif ($reply[1] =~ /celt48|slin48/) {
+		@format = ("sln48", 48000);
 	} else {
-		return ("sln", 8000);
+		@format = ("sln", 8000);
 	}
+	return @format;
 }
 
 sub int_handler {
