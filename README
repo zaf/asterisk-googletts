@@ -25,10 +25,12 @@ To make sure check your /etc/asterisk/asterisk.conf file
 -----
 Usage
 -----
-agi(googletts.agi,text,[language],[intkey]): This will invoke the Google TTS engine,
-render the text string to speech and play it back to the user. If 'intkey' is set
-the script will wait for user input. Any given interrupt keys will cause the playback
-to immediately terminate and the dialplan to proceed to the matching extension (for use in IVR).
+agi(googletts.agi,"text",[language],[intkey],[speed]): This will invoke the Google TTS
+engine, render the text string to speech and play it back to the user.
+If 'intkey' is set the script will wait for user input. Any given interrupt keys will
+cause the playback to immediately terminate and the dialplan to proceed to the
+matching extension (this is mainly for use in IVR, see README for examples).
+If 'speed' is set the speech rate is altered by that factor (defaults to 1.2).
 
 The script contacts google's TTS service in order to get the voice data
 which then stores in a local cache (by default /tmp/) for future use.

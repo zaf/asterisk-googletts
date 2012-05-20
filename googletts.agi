@@ -3,7 +3,7 @@
 #
 # AGI script that uses Google's translate text to speech engine.
 #
-# Copyright (C) 2011 -2012, Lefteris Zafiris <zaf.000@gmail.com>
+# Copyright (C) 2011 - 2012, Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2. See the COPYING file
@@ -12,11 +12,12 @@
 # -----
 # Usage
 # -----
-# agi(googletts.agi,"text",[language],[intkey]): This will invoke the Google TTS engine,
-# render the text string to speech and play it back to the user. If 'intkey' is set the
-# script will wait for user input. Any given interrupt keys will cause the playback
-# to immediately terminate and the dialplan to proceed to the matching extension
-# (this is mainly for use in IVR, see README for examples).
+# agi(googletts.agi,"text",[language],[intkey],[speed]): This will invoke the Google TTS
+# engine, render the text string to speech and play it back to the user.
+# If 'intkey' is set the script will wait for user input. Any given interrupt keys will
+# cause the playback to immediately terminate and the dialplan to proceed to the
+# matching extension (this is mainly for use in IVR, see README for examples).
+# If 'speed' is set the speech rate is altered by that factor (defaults to 1.2).
 #
 # The script contacts google's TTS service in order to get the voice data
 # which then stores in a local cache (by default /tmp/) for future use.
@@ -49,7 +50,8 @@ $| = 1;
 my $lang = "en";
 
 # Output audio sample rate      #
-my $samplerate = 0;
+# Leave blank to auto-detect    #
+my $samplerate = "";
 
 # Output speed factor           #
 my $speed = 1.2;
@@ -61,10 +63,11 @@ my $usecache = 1;
 my $cachedir = "/tmp";
 
 # SoX Version                   #
-my $sox_ver = 12;
+# Leave blank to auto-detect    #
+my $sox_ver = "";
 
 # Verbose debugging messages    #
-my $debug = 0;
+my $debug = 1;
 
 # ----------------------------- #
 
@@ -92,7 +95,7 @@ while (<STDIN>) {
 	last if (!length);
 	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
 }
-($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}) = @ARGV;
+($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}, $AGI{arg_4}) = @ARGV;
 
 $name = " -- $AGI{request}:";
 
@@ -100,7 +103,11 @@ $name = " -- $AGI{request}:";
 die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 
 chomp($sox, $mpg123);
-warn "$name Found sox in: $sox, mpg123 in: $mpg123\n" if ($debug);
+# Detect sox version #
+if (!$sox_ver) {
+	$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
+}
+warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
 
 # Sanitising input #
 for ($AGI{arg_1}) {
@@ -113,7 +120,7 @@ for ($AGI{arg_1}) {
 	@text = /.{1,100}[.,?!:;]|.{1,100}\s/g;
 }
 
-# Setting language and interrupt keys #
+# Setting language, interrupt keys and speed rate #
 if (length($AGI{arg_2})) {
 	if ($AGI{arg_2} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2,6})?$/) {
 		$lang = $AGI{arg_2};
@@ -125,6 +132,10 @@ if (length($AGI{arg_2})) {
 if (length($AGI{arg_3})) {
 	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
 	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
+}
+
+if (length($AGI{arg_4})) {
+	$speed = $AGI{arg_4} if ($AGI{arg_4} =~ /^\d+(\.\d+)?$/);
 }
 
 # Check cache path size: dir length + md5 + file extension #
@@ -142,7 +153,7 @@ if ($result[0] == 4) {
 }
 
 # Setting filename extension according to sample rate. #
-if    ($samplerate == 0)     { ($fexten, $samplerate) = detect_format(); }
+if    (!$samplerate)         { ($fexten, $samplerate) = detect_format(); }
 elsif ($samplerate == 12000) { $fexten = "sln12"; }
 elsif ($samplerate == 16000) { $fexten = "sln16"; }
 elsif ($samplerate == 32000) { $fexten = "sln32"; }
