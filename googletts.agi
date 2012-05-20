@@ -67,7 +67,7 @@ my $cachedir = "/tmp";
 my $sox_ver = "";
 
 # Verbose debugging messages    #
-my $debug = 1;
+my $debug = 0;
 
 # ----------------------------- #
 
