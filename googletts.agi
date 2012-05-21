@@ -80,7 +80,6 @@ my $tmpname;
 my $filename;
 my $fexten;
 my @result;
-my @soxargs;
 my $name;
 my $intkey = "";
 my $tmpdir = "/tmp";
@@ -173,7 +172,7 @@ foreach my $line (@text) {
 	if ($debug) {
 		warn "$name Text passed for synthesis: $line\n",
 			"$name Language: $lang, Interrupt keys: $intkey, Sample rate: $samplerate\n",
-			"$name Caching: $usecache, Cache dir: $cachedir\n";
+			"$name Speed: $speed, Caching: $usecache, Cache dir: $cachedir\n";
 	}
 	if ($usecache) {
 		$filename = md5_hex("$line.$speed");
@@ -201,7 +200,7 @@ foreach my $line (@text) {
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
 
-	@soxargs = (
+	my @soxargs = (
 		$sox, "$tmpname.wav", "-q", "-r", $samplerate, "-t", "raw", "$tmpname.$fexten"
 	);
 	if ($sox_ver >= 14) {
