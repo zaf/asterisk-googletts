@@ -64,7 +64,7 @@ my $samplerate = "";
 
 # SoX Version                   #
 # Leave blank to auto-detect    #
-my $sox_ver = "";
+my $sox_ver = 12;
 
 # Verbose debugging messages    #
 my $debug = 0;
@@ -279,10 +279,12 @@ sub get_sox_args {
 	my ($source_file, $dest_file) = @_;
 
 	my @soxargs = ($sox, $source_file, "-q", "-r", $samplerate, "-t", "raw", $dest_file);
-	if ($sox_ver >= 14) {
-		push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
-	} else {
-		push(@soxargs, ("stretch", 1/$speed, "80")) if ($speed != 1);
+	if ($speed != 1) {
+		if ($sox_ver >= 14) {
+			push(@soxargs, ("tempo", "-s", $speed));
+		} else {
+			push(@soxargs, ("stretch", 1/$speed, "80"));
+		}
 	}
 	return @soxargs;
 }
