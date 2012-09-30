@@ -1,3 +1,9 @@
+2012-30-09 Lefteris Zafiris <zaf.000@gmail.com> - 0.7
+	Added user defined speed factor option from dialplan.
+	Sox version auto-detection.	Automatic sound format detection.
+	Proxy support. Improved temp file handling.
+	Use of 'ConnChace' to speed up http requests.
+
 2012-03-18 Lefteris Zafiris <zaf.000@gmail.com> - 0.6
 	Added speed factor option. Major rewrite of the cli app.
 	Many small fixes.
