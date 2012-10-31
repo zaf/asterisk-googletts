@@ -47,7 +47,7 @@ $| = 1;
 #   User defined parameters:    #
 # ----------------------------- #
 # Default language              #
-my $lang = "en";
+my $lang = "en-US";
 
 # Output speed factor           #
 my $speed = 1.2;

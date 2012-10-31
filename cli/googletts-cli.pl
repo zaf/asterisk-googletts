@@ -24,7 +24,7 @@ my @soxargs;
 my $samplerate;
 my $input;
 my $speed   = 1.2;
-my $lang    = "en";
+my $lang    = "en-US";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
 my $url     = "http://translate.google.com/translate_tts";
@@ -159,7 +159,7 @@ sub VERSION_MESSAGE {
 		"Supported options:\n",
 		" -t <text>      text string to synthesize\n",
 		" -f <file>      text file to synthesize\n",
-		" -l <lang>      specify the language to use, defaults to 'en' (English)\n",
+		" -l <lang>      specify the language to use, defaults to 'en-US' (English)\n",
 		" -o <filename>  write output as WAV file\n",
 		" -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
 		" -s <factor>    specify the output speed factor (default 1.2)\n",
