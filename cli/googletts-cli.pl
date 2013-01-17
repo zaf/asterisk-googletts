@@ -23,7 +23,7 @@ my @mp3list;
 my @soxargs;
 my $samplerate;
 my $input;
-my $speed   = 1.2;
+my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
@@ -162,7 +162,7 @@ sub VERSION_MESSAGE {
 		" -l <lang>      specify the language to use, defaults to 'en-US' (English)\n",
 		" -o <filename>  write output as WAV file\n",
 		" -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
-		" -s <factor>    specify the output speed factor (default 1.2)\n",
+		" -s <factor>    specify the output speed factor\n",
 		" -q             quiet (Don't print any messages or warnings)\n",
 		" -h             this help message\n",
 		" -v             suppoted languages list\n\n",

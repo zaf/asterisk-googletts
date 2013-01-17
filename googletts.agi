@@ -175,7 +175,7 @@ foreach my $line (@text) {
 			"$name Speed: $speed, Caching: $usecache, Cache dir: $cachedir\n";
 	}
 	if ($usecache) {
-		$filename = md5_hex("$line.$speed");
+		$filename = md5_hex("$line.$lang.$speed");
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
 			warn "$name File already in cache.\n" if ($debug);
