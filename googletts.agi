@@ -50,7 +50,7 @@ $| = 1;
 my $lang = "en-US";
 
 # Output speed factor           #
-my $speed = 1.2;
+my $speed = 1;
 
 # Use of cache mechanism        #
 my $usecache = 1;
@@ -81,12 +81,13 @@ my $filename;
 my $fexten;
 my @result;
 my $name;
-my $intkey = "";
-my $tmpdir = "/tmp";
-my $maxlen = 2048;
-my $url    = "http://translate.google.com/translate_tts";
-my $sox    = `/usr/bin/which sox`;
-my $mpg123 = `/usr/bin/which mpg123`;
+my $intkey  = "";
+my $tmpdir  = "/tmp";
+my $maxlen  = 4096;
+my $timeout = 10;
+my $url     = "http://translate.google.com/translate_tts";
+my $sox     = `/usr/bin/which sox`;
+my $mpg123  = `/usr/bin/which mpg123`;
 
 # Store AGI input #
 while (<STDIN>) {
@@ -138,7 +139,9 @@ if (length($AGI{arg_4})) {
 }
 
 # Check cache path size: dir length + md5 + file extension #
-if ($usecache && ((length($cachedir) + 32 + 6) > $maxlen)) {
+if ($usecache && ((length($cachedir) + 32 + 6) < $maxlen)) {
+	mkpath("$cachedir") unless (-d "$cachedir");
+} else {
 	warn "$name Cache path size exceeds limit. Disabling cache.\n";
 	$usecache = 0;
 }
@@ -164,7 +167,7 @@ $ua = LWP::UserAgent->new;
 $ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
-$ua->timeout(5);
+$ua->timeout($timeout);
 
 foreach my $line (@text) {
 	$line =~ s/^\s+|\s+$//g;
@@ -207,7 +210,6 @@ foreach my $line (@text) {
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);
 	if ($usecache) {
-		mkpath("$cachedir") unless (-d "$cachedir");
 		warn "$name Saving file $filename to cache\n" if ($debug);
 		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 	} else {
