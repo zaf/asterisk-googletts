@@ -34,11 +34,13 @@
 
 use warnings;
 use strict;
+use utf8;
+use Encode qw(decode encode);
 use File::Temp qw(tempfile);
 use File::Copy qw(move);
 use File::Path qw(mkpath);
 use Digest::MD5 qw(md5_hex);
-use CGI::Util qw(escape);
+use URI::Escape;
 use LWP::UserAgent;
 use LWP::ConnCache;
 $| = 1;
@@ -110,6 +112,7 @@ if (!$sox_ver) {
 warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
 
 # Sanitising input #
+$AGI{arg_1} = decode('utf8', $AGI{arg_1});
 for ($AGI{arg_1}) {
 	s/[\\|*~<>^\(\)\[\]\{\}[:cntrl:]]/ /g;
 	s/\s+/ /g;
@@ -170,6 +173,7 @@ $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
 foreach my $line (@text) {
+	$line = encode('utf8', $line);
 	$line =~ s/^\s+|\s+$//g;
 	last if (length($line) == 0);
 	if ($debug) {
@@ -187,7 +191,7 @@ foreach my $line (@text) {
 			next;
 		}
 	}
-	$line = escape($line);
+	$line = uri_escape($line);
 	warn "$name URL passed: $url?tl=$lang&q=$line\n" if ($debug);
 
 	# Hnadle interrupts #

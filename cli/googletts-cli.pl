@@ -11,9 +11,11 @@
 
 use warnings;
 use strict;
+use utf8;
+use Encode qw(decode encode);
 use Getopt::Std;
 use File::Temp qw(tempfile);
-use CGI::Util qw(escape);
+use URI::Escape;
 use LWP::UserAgent;
 use LWP::ConnCache;
 
@@ -46,7 +48,7 @@ if (!$mpg123 || !$sox) {
 chomp($mpg123, $sox);
 
 parse_options();
-
+$input = decode('utf8', $input);
 for ($input) {
 	# Split input to comply with google tts requirements #
 	s/[\\|*~<>^\n\(\)\[\]\{\}[:cntrl:]]/ /g;
@@ -68,9 +70,10 @@ $ua->timeout($timeout);
 
 foreach my $line (@text) {
 	# Get speech data from google and save them in temp files #
+	$line = encode('utf8', $line);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
-	$line = escape($line);
+	$line = uri_escape($line);
 	my ($mp3_fh, $mp3_name) = tempfile(
 		"tts_XXXXXX",
 		DIR    => $tmpdir,
