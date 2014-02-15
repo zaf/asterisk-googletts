@@ -30,6 +30,7 @@
 # Chace:             $usecache
 # Chache directory:  $cachedir
 # SoX Version:       $sox_ver
+# SSL encryption:    $use_ssl
 #
 
 use warnings;
@@ -68,6 +69,9 @@ my $samplerate = "";
 # Leave blank to auto-detect    #
 my $sox_ver = "";
 
+# Use SSL for encryption        #
+my $use_ssl = 0;
+
 # Verbose debugging messages    #
 my $debug = 0;
 
@@ -83,11 +87,12 @@ my $filename;
 my $fexten;
 my @result;
 my $name;
+my $url;
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
 my $timeout = 10;
-my $url     = "http://translate.google.com/translate_tts";
+my $host    = "translate.google.com/translate_tts";
 my $sox     = `/usr/bin/which sox`;
 my $mpg123  = `/usr/bin/which mpg123`;
 
@@ -166,7 +171,15 @@ elsif ($samplerate == 44100) { $fexten = "sln44"; }
 elsif ($samplerate == 48000) { $fexten = "sln48"; }
 else                         { ($fexten, $samplerate) =  ("sln", 8000); }
 
-$ua = LWP::UserAgent->new;
+
+# Initialise User angent #
+if ($use_ssl) {
+	$url = "https://" . $host;
+	$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
+} else {
+	$url = "http://" . $host;
+	$ua  = LWP::UserAgent->new;
+}
 $ua->agent("Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
@@ -175,7 +188,7 @@ $ua->timeout($timeout);
 foreach my $line (@text) {
 	$line = encode('utf8', $line);
 	$line =~ s/^\s+|\s+$//g;
-	last if (length($line) == 0);
+	next if (length($line) == 0);
 	if ($debug) {
 		warn "$name Text passed for synthesis: $line\n",
 			"$name Language: $lang, Interrupt keys: $intkey, Sample rate: $samplerate\n",

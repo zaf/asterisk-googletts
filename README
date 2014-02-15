@@ -202,6 +202,14 @@ Yiddish:            yi
 Yoruba:             yo
 Zulu:               zu
 
+-----------------------
+Security Considerations
+-----------------------
+This script contacts googles' servers in order to get voice data.
+The script can SSL to encrypt all the traffic between your pbx and google servers
+so no 3rd party can eavesdrop your communication, but your data will be available
+to Google under a not yet defined policy.
+
 -------
 License
 -------
