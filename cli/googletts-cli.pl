@@ -3,7 +3,7 @@
 #
 # Script that uses Google Translate for text to speech synthesis.
 #
-# Copyright (C) 2012, Lefteris Zafiris <zaf.000@gmail.com>
+# Copyright (C) 2012 - 2014, Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2.
@@ -63,7 +63,7 @@ for ($input) {
 }
 
 my $ua = LWP::UserAgent->new;
-$ua->agent("Mozilla/5.0 (X11; Linux; rv:8.0) Gecko/20100101");
+$ua->agent("Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
