@@ -11,7 +11,6 @@
 
 use warnings;
 use strict;
-use utf8;
 use Encode qw(decode encode);
 use Getopt::Std;
 use File::Temp qw(tempfile);
