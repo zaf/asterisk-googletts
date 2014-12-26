@@ -210,6 +210,17 @@ The script can SSL to encrypt all the traffic between your pbx and google server
 so no 3rd party can eavesdrop your communication, but your data will be available
 to Google under a not yet defined policy.
 
+------------
+Tiny version
+------------
+The '-tiny' suffixed scripts use the HTTP::Tiny perl module instead of LWP::UserAgent.
+This makes them a lot faster when run in small embedded systems or boards like
+the Raspberry pi. They can be used as an in-place replacement of the normal versions
+of the TTS scripts and expose the same interface/cli args. To use them just make sure
+you have HTTP::Tiny installed.
+In debian or ubuntu based distros: 'apt-get install libhttp-tiny-perl'
+In distros that don't have it in their repos: 'cpan HTTP::Tiny'
+
 -------
 License
 -------

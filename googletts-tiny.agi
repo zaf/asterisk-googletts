@@ -1,0 +1,320 @@
+#!/usr/bin/env perl
+
+#
+# AGI script that uses Google's translate text to speech engine.
+#
+# Copyright (C) 2011 - 2014, Lefteris Zafiris <zaf.000@gmail.com>
+#
+# This program is free software, distributed under the terms of
+# the GNU General Public License Version 2. See the COPYING file
+# at the top of the source tree.
+#
+# -----
+# Usage
+# -----
+# agi(googletts.agi,"text",[language],[intkey],[speed]): This will invoke the Google TTS
+# engine, render the text string to speech and play it back to the user.
+# If 'intkey' is set the script will wait for user input. Any given interrupt keys will
+# cause the playback to immediately terminate and the dialplan to proceed to the
+# matching extension (this is mainly for use in IVR, see README for examples).
+# If 'speed' is set the speech rate is altered by that factor (defaults to 1.2).
+#
+# The script contacts google's TTS service in order to get the voice data
+# which then stores in a local cache (by default /tmp/) for future use.
+#
+# Parameters like default language, sample rate, caching and cache dir
+# can be set up by altering the following variables:
+# Default langeuage: $lang
+# Sample rate:       $samplerate
+# Speed factor:      $speed
+# Chace:             $usecache
+# Chache directory:  $cachedir
+# SoX Version:       $sox_ver
+# SSL encryption:    $use_ssl
+#
+
+use warnings;
+use strict;
+use Encode qw(decode encode);
+use File::Temp qw(tempfile);
+use File::Copy qw(move);
+use File::Path qw(mkpath);
+use Digest::MD5 qw(md5_hex);
+use URI::Escape;
+use HTTP::Tiny;
+$| = 1;
+
+# ----------------------------- #
+#   User defined parameters:    #
+# ----------------------------- #
+# Default language              #
+my $lang = "en-US";
+
+# Output speed factor           #
+my $speed = 1;
+
+# Use of cache mechanism        #
+my $usecache = 1;
+
+# Cache directory path          #
+my $cachedir = "/tmp";
+
+# Output audio sample rate      #
+# Leave blank to auto-detect    #
+my $samplerate = "8000";
+
+# SoX Version                   #
+# Leave blank to auto-detect    #
+my $sox_ver = "14";
+
+# Use SSL for encryption        #
+my $use_ssl = 0;
+
+# Verbose debugging messages    #
+my $debug = 0;
+
+# ----------------------------- #
+
+my %AGI;
+my @text;
+my $http;
+my $res;
+my $fh;
+my $tmpname;
+my $filename;
+my $fexten;
+my @result;
+my $name;
+my $url;
+my $intkey  = "";
+my $tmpdir  = "/tmp";
+my $maxlen  = 4096;
+my $timeout = 10;
+my $host    = "translate.google.com/translate_tts";
+my $sox     = `/usr/bin/which sox`;
+my $mpg123  = `/usr/bin/which mpg123`;
+
+# Store AGI input #
+($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}, $AGI{arg_4}) = @ARGV;
+while (<STDIN>) {
+	chomp;
+	last if (!length);
+	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
+}
+
+$name = " -- $AGI{request}:";
+
+# Abort if required programs not found. #
+die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
+
+chomp($sox, $mpg123);
+# Detect sox version #
+if (!$sox_ver) {
+	$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
+}
+warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
+
+# Sanitising input #
+$AGI{arg_1} = decode('utf8', $AGI{arg_1});
+for ($AGI{arg_1}) {
+	s/[\\|*~<>^\(\)\[\]\{\}[:cntrl:]]/ /g;
+	s/\s+/ /g;
+	s/^\s|\s$//g;
+	die "$name No text passed for synthesis.\n" if (!length);
+	# Split input to comply with google tts requirements #
+	$_ .= "." unless (/^.+[.,?!:;]$/);
+	@text = /.{1,99}[.,?!:;]|.{1,99}\s/g;
+}
+
+# Setting language, interrupt keys and speed rate #
+if (length($AGI{arg_2})) {
+	if ($AGI{arg_2} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2,6})?$/) {
+		$lang = $AGI{arg_2};
+	} else {
+		warn "$name Invalid language setting. Using default.\n";
+	}
+}
+
+if (length($AGI{arg_3})) {
+	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
+	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
+}
+
+if (length($AGI{arg_4})) {
+	$speed = $AGI{arg_4} if ($AGI{arg_4} =~ /^\d+(\.\d+)?$/);
+}
+
+# Check cache path size: dir length + md5 + file extension #
+if ($usecache && ((length($cachedir) + 32 + 6) < $maxlen)) {
+	mkpath("$cachedir") unless (-d "$cachedir");
+} else {
+	warn "$name Cache path size exceeds limit. Disabling cache.\n";
+	$usecache = 0;
+}
+
+# Answer channel if not already answered #
+print "CHANNEL STATUS\n";
+@result = checkresponse();
+if ($result[0] == 4) {
+	print "ANSWER\n";
+	checkresponse();
+}
+
+# Setting filename extension according to sample rate. #
+if    (!$samplerate)         { ($fexten, $samplerate) = detect_format(); }
+elsif ($samplerate == 12000) { $fexten = "sln12"; }
+elsif ($samplerate == 16000) { $fexten = "sln16"; }
+elsif ($samplerate == 32000) { $fexten = "sln32"; }
+elsif ($samplerate == 44100) { $fexten = "sln44"; }
+elsif ($samplerate == 48000) { $fexten = "sln48"; }
+else                         { ($fexten, $samplerate) =  ("sln", 8000); }
+
+
+# Initialise User angent #
+if ($use_ssl) {
+	$url = "https://" . $host;
+	$http = HTTP::Tiny->new(
+		agent      => 'Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101',
+		timeout    => $timeout,
+		verify_SSL => 1,
+	);
+} else {
+	$url = "http://" . $host;
+	$http = HTTP::Tiny->new(
+		agent   => 'Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101',
+		timeout => $timeout,
+	);
+}
+
+foreach my $line (@text) {
+	$line = encode('utf8', $line);
+	$line =~ s/^\s+|\s+$//g;
+	next if (length($line) == 0);
+	if ($debug) {
+		warn "$name Text passed for synthesis: $line\n",
+			"$name Language: $lang, Interrupt keys: $intkey, Sample rate: $samplerate\n",
+			"$name Speed: $speed, Caching: $usecache, Cache dir: $cachedir\n";
+	}
+	if ($usecache) {
+		$filename = md5_hex("$line.$lang.$speed");
+		# Stream file from cache if it exists #
+		if (-r "$cachedir/$filename.$fexten") {
+			warn "$name File already in cache.\n" if ($debug);
+			$res = playback("$cachedir/$filename", $intkey);
+			last if ($res > 0);
+			next;
+		}
+	}
+	$line = uri_escape($line);
+	warn "$name URL passed: $url?tl=$lang&q=$line\n" if ($debug);
+
+	# Hnadle interrupts #
+	$SIG{'INT'} = \&int_handler;
+	$SIG{'HUP'} = \&int_handler;
+
+	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
+	my $response = $http->mirror("$url?tl=$lang&q=$line", $tmpname);
+	die "$name Failed to fetch file.\n" unless ($response->{success});
+
+	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
+	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
+		or die "$name $mpg123 failed: $?\n";
+
+	my @soxargs = get_sox_args("$tmpname.wav", "$tmpname.$fexten");
+	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
+	unlink "$tmpname.wav";
+
+	# Playback and save file in cache #
+	$res = playback($tmpname, $intkey);
+	if ($usecache) {
+		warn "$name Saving file $filename to cache\n" if ($debug);
+		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
+	} else {
+		unlink "$tmpname.$fexten";
+	}
+	last if ($res > 0);
+}
+exit;
+
+sub checkresponse {
+	my $input = <STDIN>;
+	my @values;
+
+	chomp $input;
+	if ($input =~ /^200/) {
+		$input =~ /result=(-?\d+)\s?(.*)$/;
+		if (!length($1)) {
+			warn "$name Command failed: $input\n";
+			@values = (-1, -1);
+		} else {
+			warn "$name Command returned: $input\n" if ($debug);
+			@values = ("$1", "$2");
+		}
+	} else {
+		warn "$name Unexpected result: $input\n";
+		@values = (-1, -1);
+	}
+	return @values;
+}
+
+sub playback {
+	my ($file, $keys) = @_;
+	my @response;
+
+	print "STREAM FILE $file \"$keys\"\n";
+	@response = checkresponse();
+	if ($response[0] >= 32 && chr($response[0]) =~ /[\w*#]/) {
+		warn "$name Got digit ", chr($response[0]), "\n" if ($debug);
+		print "SET EXTENSION ", chr($response[0]), "\n";
+		checkresponse();
+		print "SET PRIORITY 1\n";
+		checkresponse();
+		return $response[0];
+	} elsif ($response[0] == -1) {
+		warn "$name Failed to play $file.\n";
+		return -1;
+	}
+	return 0;
+}
+
+sub detect_format {
+# Detect the sound format used #
+	my @format;
+	print "GET FULL VARIABLE \${CHANNEL(audionativeformat)}\n";
+	my @reply = checkresponse();
+	for ($reply[1]) {
+		if    (/(silk|sln)12/)                    { @format = ("sln12", 12000); }
+		elsif (/(speex|slin|silk)16|g722|siren7/) { @format = ("sln16", 16000); }
+		elsif (/(speex|slin|celt)32|siren14/)     { @format = ("sln32", 32000); }
+		elsif (/(celt|slin)44/)                   { @format = ("sln44", 44100); }
+		elsif (/(celt|slin)48/)                   { @format = ("sln48", 48000); }
+		else                                      { @format = ("sln",    8000); }
+	}
+	return @format;
+}
+
+sub get_sox_args {
+# Set the appropiate sox cli arguments #
+	my ($source_file, $dest_file) = @_;
+
+	my @soxargs = ($sox, $source_file, "-q", "-r", $samplerate, "-t", "raw", $dest_file);
+	if ($speed != 1) {
+		if ($sox_ver >= 14) {
+			push(@soxargs, ("tempo", "-s", $speed));
+		} else {
+			push(@soxargs, ("stretch", 1/$speed, "80"));
+		}
+	}
+	return @soxargs;
+}
+
+sub int_handler {
+	die "$name Interrupt signal received, terminating...\n";
+}
+
+END {
+	if ($tmpname) {
+		warn "$name Cleaning temp files.\n" if ($debug);
+		unlink glob "$tmpname*";
+	}
+}
