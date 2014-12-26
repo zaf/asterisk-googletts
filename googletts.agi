@@ -109,11 +109,6 @@ $name = " -- $AGI{request}:";
 die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 
 chomp($sox, $mpg123);
-# Detect sox version #
-if (!$sox_ver) {
-	$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
-}
-warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
 
 # Sanitising input #
 $AGI{arg_1} = decode('utf8', $AGI{arg_1});
@@ -218,7 +213,11 @@ foreach my $line (@text) {
 	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
-
+	# Detect sox version #
+	if (!$sox_ver) {
+		$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
+		warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
+	}
 	my @soxargs = get_sox_args("$tmpname.wav", "$tmpname.$fexten");
 	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
 	unlink "$tmpname.wav";
