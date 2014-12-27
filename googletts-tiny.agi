@@ -86,13 +86,13 @@ my $fexten;
 my @result;
 my $name;
 my $url;
+my $sox;
+my $mpg123;
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
 my $timeout = 10;
 my $host    = "translate.google.com/translate_tts";
-my $sox     = `/usr/bin/which sox`;
-my $mpg123  = `/usr/bin/which mpg123`;
 
 # Store AGI input #
 ($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}, $AGI{arg_4}) = @ARGV;
@@ -101,13 +101,7 @@ while (<STDIN>) {
 	last if (!length);
 	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
 }
-
 $name = " -- $AGI{request}:";
-
-# Abort if required programs not found. #
-die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
-
-chomp($sox, $mpg123);
 
 # Sanitising input #
 $AGI{arg_1} = decode('utf8', $AGI{arg_1});
@@ -210,16 +204,22 @@ foreach my $line (@text) {
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
 	my $response = $http->mirror("$url?tl=$lang&q=$line", $tmpname);
 	die "$name Failed to fetch file.\n" unless ($response->{success});
-
-	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
-	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
-		or die "$name $mpg123 failed: $?\n";
-
-	# Detect sox version #
+	# Detect required programs #
+	if (!$sox || !$mpg123) {
+		$sox    = `/usr/bin/which sox`;
+		$mpg123 = `/usr/bin/which mpg123`;
+		# Abort if required programs not found. #
+		die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
+		chomp($sox, $mpg123);
+	}
 	if (!$sox_ver) {
 		$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
 		warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
 	}
+	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
+	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
+		or die "$name $mpg123 failed: $?\n";
+
 	my @soxargs = get_sox_args("$tmpname.wav", "$tmpname.$fexten");
 	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
 	unlink "$tmpname.wav";
