@@ -68,7 +68,7 @@ my $samplerate = "8000";
 my $sox_ver = "14";
 
 # Use SSL for encryption        #
-my $use_ssl = 0;
+my $use_ssl = 1;
 
 # Verbose debugging messages    #
 my $debug = 0;
