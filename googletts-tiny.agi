@@ -78,6 +78,7 @@ my $tmpname;
 my $fexten;
 my $sox;
 my $mpg123;
+my $index   = 0;
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
@@ -102,8 +103,9 @@ for ($AGI{arg_1}) {
 	die "$name No text passed for synthesis.\n" if (!length);
 	# Split input to comply with google tts requirements #
 	$_ .= "." unless (/^.+[.,?!:;]$/);
-	@text = /.{1,99}[.,?!:;]|.{1,99}\s/g;
+	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
+my $size = @text;
 
 # Setting language, interrupt keys and speed rate #
 if (length($AGI{arg_2})) {
@@ -177,7 +179,7 @@ foreach my $line (@text) {
 		}
 	}
 	$line = uri_escape($line);
-	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t\n" if ($debug);
+	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
@@ -189,7 +191,7 @@ foreach my $line (@text) {
 		'Referer' => 'https://translate.google.co.uk/',
 		'Accept-Language' => 'en-US,en;q=0.5',
 	};
-	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t", $tmpname, $headers);
+	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t", $tmpname, $headers);
 	die "$name Failed to fetch file.\n" unless ($response->{success});
 	# Detect required programs #
 	if (!$sox || !$mpg123) {
@@ -220,6 +222,7 @@ foreach my $line (@text) {
 		unlink "$tmpname.$fexten";
 	}
 	last if ($res > 0);
+	$index++;
 }
 exit;
 

@@ -23,6 +23,7 @@ my @text;
 my @mp3list;
 my $samplerate;
 my $input;
+my $index   = 0;
 my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
@@ -56,8 +57,9 @@ for ($input) {
 		exit 1;
 	}
 	$_ .= "." unless (/^.+[.,?!:;]$/);
-	@text = /.{1,99}[.,?!:;]|.{1,99}\s/g;
+	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
+my $size = @text;
 
 # Initialise User angent #
 my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 1 });
@@ -78,7 +80,7 @@ foreach my $line (@text) {
 		SUFFIX => ".mp3",
 		UNLINK => 1
 	);
-	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t");
+	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t");
 	$request->header(
 		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
 		'Referer' => 'https://translate.google.co.uk/',
@@ -92,6 +94,7 @@ foreach my $line (@text) {
 	} else {
 		push(@mp3list, $mp3_name);
 	}
+	$index++;
 }
 
 # decode mp3s and concatenate #

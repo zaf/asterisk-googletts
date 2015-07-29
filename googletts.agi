@@ -77,6 +77,7 @@ my @text;
 my $fh;
 my $tmpname;
 my $fexten;
+my $index   = 0;
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
@@ -109,8 +110,9 @@ for ($AGI{arg_1}) {
 	die "$name No text passed for synthesis.\n" if (!length);
 	# Split input to comply with google tts requirements #
 	$_ .= "." unless (/^.+[.,?!:;]$/);
-	@text = /.{1,99}[.,?!:;]|.{1,99}\s/g;
+	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
+my $size = @text;
 
 # Setting language, interrupt keys and speed rate #
 if (length($AGI{arg_2})) {
@@ -184,14 +186,14 @@ foreach my $line (@text) {
 		}
 	}
 	$line = uri_escape($line);
-	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t\n" if ($debug);
+	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
 	my ($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t");
+	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t");
 	$ua_request->header(
 		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
 		'Referer' => 'https://translate.google.co.uk/',
@@ -221,6 +223,7 @@ foreach my $line (@text) {
 		unlink "$tmpname.$fexten";
 	}
 	last if ($res > 0);
+	$index++;
 }
 exit;
 
