@@ -37,7 +37,6 @@ my $sox     = `/usr/bin/which sox`;
 VERSION_MESSAGE() if (!@ARGV);
 
 getopts('o:l:r:t:f:s:hqv', \%options);
-
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
 lang_list("dislpay") if (defined $options{v});
@@ -65,7 +64,7 @@ for ($input) {
 
 # Initialise User angent #
 $url = "https://" . $host;
-$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
+$ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 1 });
 $ua->agent("Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
@@ -85,11 +84,12 @@ foreach my $line (@text) {
 	);
 	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t");
 	$request->header(
-		'Accept'          => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
-		'Referer'         => 'https://translate.google.co.uk/',
+		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
+		'Referer' => 'https://translate.google.co.uk/',
 		'Accept-Language' => 'en-US,en;q=0.5',
 	);
 	my $response = $ua->request($request, $mp3_name);
+
 	if (!$response->is_success) {
 		say_msg("Failed to fetch speech data.");
 		exit 1;
@@ -148,7 +148,7 @@ sub parse_options {
 	}
 	# set the speech language #
 	if (defined $options{l}) {
-		$options{l} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2,6})?$/ ? $lang = $options{l}
+		$options{l} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2})?$/ ? $lang = $options{l}
 			: say_msg("Invalid language setting, using default.");
 	}
 	# set audio sample rate #
@@ -187,68 +187,46 @@ sub lang_list {
 	# Display the list of supported languages to the user or return it as a hash #
 	my $opt      = shift;
 	my %sup_lang = (
-		"Afrikaans",             "af",         "Albanian",             "sq",
-		"Amharic",               "am",         "Arabic",               "ar",
-		"Armenian",              "hy",         "Azerbaijani",          "az",
-		"Basque",                "eu",         "Belarusian",           "be",
-		"Bengali",               "bn",         "Bihari",               "bh",
-		"Bosnian",               "bs",         "Breton",               "br",
-		"Bulgarian",             "bg",         "Cambodian",            "km",
-		"Catalan",               "ca",         "Chinese (Simplified)", "zh-CN",
-		"Chinese (Traditional)", "zh-TW",      "Corsican",             "co",
-		"Croatian",              "hr",         "Czech",                "cs",
-		"Danish",                "da",         "Dutch",                "nl",
-		"English",               "en",         "Esperanto",            "eo",
-		"Estonian",              "et",         "Faroese",              "fo",
-		"Filipino",              "tl",         "Finnish",              "fi",
-		"French",                "fr",         "Frisian",              "fy",
-		"Galician",              "gl",         "Georgian",             "ka",
-		"German",                "de",         "Greek",                "el",
-		"Guarani",               "gn",         "Gujarati",             "gu",
-		"Hacker",                "xx-hacker",  "Hausa",                "ha",
-		"Hebrew",                "iw",         "Hindi",                "hi",
-		"Hungarian",             "hu",         "Icelandic",            "is",
-		"Indonesian",            "id",         "Interlingua",          "ia",
-		"Irish",                 "ga",         "Italian",              "it",
-		"Japanese",              "ja",         "Javanese",             "jw",
-		"Kannada",               "kn",         "Kazakh",               "kk",
-		"Kinyarwanda",           "rw",         "Kirundi",              "rn",
-		"Klingon",               "xx-klingon", "Korean",               "ko",
-		"Kurdish",               "ku",         "Kyrgyz",               "ky",
-		"Laothian",              "lo",         "Latin",                "la",
-		"Latvian",               "lv",         "Lingala",              "ln",
-		"Lithuanian",            "lt",         "Macedonian",           "mk",
-		"Malagasy",              "mg",         "Malay",                "ms",
-		"Malayalam",             "ml",         "Maltese",              "mt",
-		"Maori",                 "mi",         "Marathi",              "mr",
-		"Moldavian",             "mo",         "Mongolian",            "mn",
-		"Montenegrin",           "sr-ME",      "Nepali",               "ne",
-		"Norwegian",             "no",         "Norwegian (Nynorsk)",  "nn",
-		"Occitan",               "oc",         "Oriya",                "or",
-		"Oromo",                 "om",         "Pashto",               "ps",
-		"Persian",               "fa",         "Pirate",               "xx-pirate",
-		"Polish",                "pl",         "Portuguese (Brazil)",  "pt-BR",
-		"Portuguese (Portugal)", "pt-PT",      "Portuguese",           "pt",
-		"Punjabi",               "pa",         "Quechua",              "qu",
-		"Romanian",              "ro",         "Romansh",              "rm",
-		"Russian",               "ru",         "Scots Gaelic",         "gd",
-		"Serbian",               "sr",         "Serbo-Croatian",       "sh",
-		"Sesotho",               "st",         "Shona",                "sn",
-		"Sindhi",                "sd",         "Sinhalese",            "si",
-		"Slovak",                "sk",         "Slovenian",            "sl",
-		"Somali",                "so",         "Spanish",              "es",
-		"Sundanese",             "su",         "Swahili",              "sw",
-		"Swedish",               "sv",         "Tajik",                "tg",
-		"Tamil",                 "ta",         "Tatar",                "tt",
-		"Telugu",                "te",         "Thai",                 "th",
-		"Tigrinya",              "ti",         "Tonga",                "to",
-		"Turkish",               "tr",         "Turkmen",              "tk",
-		"Twi",                   "tw",         "Uighur",               "ug",
-		"Ukrainian",             "uk",         "Urdu",                 "ur",
-		"Uzbek",                 "uz",         "Vietnamese",           "vi",
-		"Welsh",                 "cy",         "Xhosa",                "xh",
-		"Yiddish",               "yi",         "Yoruba",               "yo",
-		"Zulu",                  "zu"
+		"Afrikaans",            "af",    "Albanian",              "sq",    "Amharic",             "am",
+		"Arabic",               "ar",    "Armenian",              "hy",    "Azerbaijani",         "az",
+		"Basque",               "eu",    "Belarusian",            "be",    "Bengali",             "bn",
+		"Bihari",               "bh",    "Bosnian",               "bs",    "Breton",              "br",
+		"Bulgarian",            "bg",    "Cambodian",             "km",    "Catalan",             "ca",
+		"Chinese (Simplified)", "zh-CN", "Chinese (Traditional)", "zh-TW", "Corsican",            "co",
+		"Croatian",             "hr",    "Czech",                 "cs",    "Danish",              "da",
+		"Dutch",                "nl",    "English",               "en",    "Esperanto",           "eo",
+		"Estonian",             "et",    "Faroese",               "fo",    "Filipino",            "tl",
+		"Finnish",              "fi",    "French",                "fr",    "Frisian",             "fy",
+		"Galician",             "gl",    "Georgian",              "ka",    "German",              "de",
+		"Greek",                "el",    "Guarani",               "gn",    "Gujarati",            "gu",
+		"Hausa",                "ha",    "Hebrew",                "iw",    "Hindi",               "hi",
+		"Hungarian",            "hu",    "Icelandic",             "is",    "Indonesian",          "id",
+		"Interlingua",          "ia",    "Irish",                 "ga",    "Italian",             "it",
+		"Japanese",             "ja",    "Javanese",              "jw",    "Kannada",             "kn",
+		"Kazakh",               "kk",    "Kinyarwanda",           "rw",    "Kirundi",             "rn",
+		"Korean",               "ko",    "Kurdish",               "ku",    "Kyrgyz",              "ky",
+		"Laothian",             "lo",    "Latin",                 "la",    "Latvian",             "lv",
+		"Lingala",              "ln",    "Lithuanian",            "lt",    "Macedonian",          "mk",
+		"Malagasy",             "mg",    "Malay",                 "ms",    "Malayalam",           "ml",
+		"Maltese",              "mt",    "Maori",                 "mi",    "Marathi",             "mr",
+		"Moldavian",            "mo",    "Mongolian",             "mn",    "Montenegrin",         "sr-ME",
+		"Nepali",               "ne",    "Norwegian",             "no",    "Norwegian (Nynorsk)", "nn",
+		"Occitan",              "oc",    "Oriya",                 "or",    "Oromo",               "om",
+		"Pashto",               "ps",    "Persian",               "fa",    "Polish",              "pl",
+		"Portuguese (Brazil)",  "pt-BR", "Portuguese (Portugal)", "pt-PT", "Portuguese",          "pt",
+		"Punjabi",              "pa",    "Quechua",               "qu",    "Romanian",            "ro",
+		"Romansh",              "rm",    "Russian",               "ru",    "Scots Gaelic",        "gd",
+		"Serbian",              "sr",    "Serbo-Croatian",        "sh",    "Sesotho",             "st",
+		"Shona",                "sn",    "Sindhi",                "sd",    "Sinhalese",           "si",
+		"Slovak",               "sk",    "Slovenian",             "sl",    "Somali",              "so",
+		"Spanish",              "es",    "Sundanese",             "su",    "Swahili",             "sw",
+		"Swedish",              "sv",    "Tajik",                 "tg",    "Tamil",               "ta",
+		"Tatar",                "tt",    "Telugu",                "te",    "Thai",                "th",
+		"Tigrinya",             "ti",    "Tonga",                 "to",    "Turkish",             "tr",
+		"Turkmen",              "tk",    "Twi",                   "tw",    "Uighur",              "ug",
+		"Ukrainian",            "uk",    "Urdu",                  "ur",    "Uzbek",               "uz",
+		"Vietnamese",           "vi",    "Welsh",                 "cy",    "Xhosa",               "xh",
+		"Yiddish",              "yi",    "Yoruba",                "yo",    "Zulu",                "zu"
 	);
 
 	if ($opt eq "dislpay") {

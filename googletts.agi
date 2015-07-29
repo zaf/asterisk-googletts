@@ -129,7 +129,7 @@ if (length($AGI{arg_2})) {
 
 if (length($AGI{arg_3})) {
 	$intkey = "0123456789#*" if ($AGI{arg_3} eq "any");
-	$intkey = $AGI{arg_3} if ($AGI{arg_3} =~ /^[0-9*#]+$/);
+	$intkey = $AGI{arg_3}    if ($AGI{arg_3} =~ /^[0-9*#]+$/);
 }
 
 if (length($AGI{arg_4})) {
@@ -159,12 +159,11 @@ elsif ($samplerate == 16000) { $fexten = "sln16"; }
 elsif ($samplerate == 32000) { $fexten = "sln32"; }
 elsif ($samplerate == 44100) { $fexten = "sln44"; }
 elsif ($samplerate == 48000) { $fexten = "sln48"; }
-else                         { ($fexten, $samplerate) =  ("sln", 8000); }
-
+else                         { ($fexten, $samplerate) = ("sln", 8000); }
 
 # Initialise User angent #
 $url = "https://" . $host;
-$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
+$ua = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
 $ua->agent("Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
@@ -199,8 +198,8 @@ foreach my $line (@text) {
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
 	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t");
 	$ua_request->header(
-		'Accept'          => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
-		'Referer'         => 'https://translate.google.co.uk/',
+		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
+		'Referer' => 'https://translate.google.co.uk/',
 		'Accept-Language' => 'en-US,en;q=0.5',
 	);
 	my $ua_response = $ua->request($ua_request, $tmpname);
