@@ -3,7 +3,7 @@
 #
 # Script that uses Google Translate for text to speech synthesis.
 #
-# Copyright (C) 2012 - 2014, Lefteris Zafiris <zaf.000@gmail.com>
+# Copyright (C) 2012 - 20145 Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2.
@@ -26,7 +26,6 @@ my $samplerate;
 my $input;
 my $url;
 my $ua;
-my $use_ssl = 1;
 my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
@@ -37,7 +36,7 @@ my $sox     = `/usr/bin/which sox`;
 
 VERSION_MESSAGE() if (!@ARGV);
 
-getopts('o:l:r:t:f:s:heqv', \%options);
+getopts('o:l:r:t:f:s:hqv', \%options);
 
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
@@ -65,13 +64,8 @@ for ($input) {
 }
 
 # Initialise User angent #
-if ($use_ssl) {
-	$url = "https://" . $host;
-	$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
-} else {
-	$url = "http://" . $host;
-	$ua  = LWP::UserAgent->new;
-}
+$url = "https://" . $host;
+$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
 $ua->agent("Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
@@ -167,10 +161,6 @@ sub parse_options {
 		$options{s} =~ /\d+/ ? $speed = $options{s}
 			: say_msg("Invalind speed factor, using default.");
 	}
-	# set SSL encryption #
-	if (defined $options{e}) {
-		$use_ssl = 1;
-	}
 	return;
 }
 
@@ -185,7 +175,6 @@ sub VERSION_MESSAGE {
 		" -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
 		" -s <factor>    specify the output speed factor\n",
 		" -q             quiet (Don't print any messages or warnings)\n",
-		" -e             use SSL for encryption\n",
 		" -h             this help message\n",
 		" -v             suppoted languages list\n\n",
 		"Examples:\n",

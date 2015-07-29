@@ -3,7 +3,7 @@
 #
 # AGI script that uses Google's translate text to speech engine.
 #
-# Copyright (C) 2011 - 2014, Lefteris Zafiris <zaf.000@gmail.com>
+# Copyright (C) 2011 - 2015, Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2. See the COPYING file
@@ -30,7 +30,6 @@
 # Chace:             $usecache
 # Chache directory:  $cachedir
 # SoX Version:       $sox_ver
-# SSL encryption:    $use_ssl
 #
 
 use warnings;
@@ -67,9 +66,6 @@ my $samplerate = "";
 # SoX Version                   #
 # Leave blank to auto-detect    #
 my $sox_ver = "";
-
-# Use SSL for encryption        #
-my $use_ssl = 1;
 
 # Verbose debugging messages    #
 my $debug = 0;
@@ -167,13 +163,8 @@ else                         { ($fexten, $samplerate) =  ("sln", 8000); }
 
 
 # Initialise User angent #
-if ($use_ssl) {
-	$url = "https://" . $host;
-	$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
-} else {
-	$url = "http://" . $host;
-	$ua  = LWP::UserAgent->new;
-}
+$url = "https://" . $host;
+$ua  = LWP::UserAgent->new(ssl_opts => {verify_hostname => 1});
 $ua->agent("Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
