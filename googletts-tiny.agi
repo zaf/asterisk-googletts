@@ -73,22 +73,16 @@ my $debug = 0;
 
 my %AGI;
 my @text;
-my $http;
-my $res;
 my $fh;
 my $tmpname;
-my $filename;
 my $fexten;
-my @result;
-my $name;
-my $url;
 my $sox;
 my $mpg123;
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
 my $timeout = 10;
-my $host    = "translate.google.com/translate_tts";
+my $url     = "https://translate.google.com/translate_tts";
 
 # Store AGI input #
 ($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}, $AGI{arg_4}) = @ARGV;
@@ -97,7 +91,7 @@ while (<STDIN>) {
 	last if (!length);
 	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
 }
-$name = " -- $AGI{request}:";
+my $name = " -- $AGI{request}:";
 
 # Sanitising input #
 $AGI{arg_1} = decode('utf8', $AGI{arg_1});
@@ -139,7 +133,7 @@ if ($usecache && ((length($cachedir) + 32 + 6) < $maxlen)) {
 
 # Answer channel if not already answered #
 print "CHANNEL STATUS\n";
-@result = checkresponse();
+my @result = checkresponse();
 if ($result[0] == 4) {
 	print "ANSWER\n";
 	checkresponse();
@@ -155,14 +149,15 @@ elsif ($samplerate == 48000) { $fexten = "sln48"; }
 else                         { ($fexten, $samplerate) =  ("sln", 8000); }
 
 # Initialise User angent #
-$url  = "https://" . $host;
-$http = HTTP::Tiny->new(
+my $http = HTTP::Tiny->new(
 	agent      => 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36',
 	timeout    => $timeout,
 	verify_SSL => 1,
 );
 
 foreach my $line (@text) {
+	my $filename;
+	my $res;
 	$line = encode('utf8', $line);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);

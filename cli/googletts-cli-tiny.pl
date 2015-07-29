@@ -20,16 +20,13 @@ use HTTP::Tiny;
 my %options;
 my @text;
 my @mp3list;
-my @soxargs;
 my $samplerate;
 my $input;
-my $url;
-my $http;
 my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
-my $host    = "translate.google.com/translate_tts";
+my $url     = "https://translate.google.com/translate_tts";
 my $mpg123  = `/usr/bin/which mpg123`;
 my $sox     = `/usr/bin/which sox`;
 
@@ -62,8 +59,7 @@ for ($input) {
 }
 
 # Initialise User angent #
-$url  = "https://" . $host;
-$http = HTTP::Tiny->new(
+my $http = HTTP::Tiny->new(
 	agent => 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36',
 	timeout    => $timeout,
 	verify_SSL => 1,
@@ -109,7 +105,7 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 }
 
 # Set sox args and process wav file #
-@soxargs = ($sox, "-q", $wav_name);
+my @soxargs = ($sox, "-q", $wav_name);
 defined $options{o} ? push(@soxargs, ($options{o})) : push(@soxargs, ("-t", "alsa", "-d"));
 push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 push(@soxargs, ("rate", $samplerate)) if ($samplerate);
