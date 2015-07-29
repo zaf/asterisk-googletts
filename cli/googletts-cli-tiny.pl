@@ -25,7 +25,7 @@ my $samplerate;
 my $input;
 my $url;
 my $http;
-my $use_ssl = 0;
+my $use_ssl = 1;
 my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
@@ -67,14 +67,14 @@ for ($input) {
 if ($use_ssl) {
 	$url = "https://" . $host;
 	$http = HTTP::Tiny->new(
-		agent      => 'Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101',
+		agent      => 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36',
 		timeout    => $timeout,
 		verify_SSL => 1,
 	);
 } else {
 	$url = "http://" . $host;
 	$http = HTTP::Tiny->new(
-		agent   => 'Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101',
+		agent   => 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36',
 		timeout => $timeout,
 	);
 }
@@ -91,7 +91,12 @@ foreach my $line (@text) {
 		SUFFIX => ".mp3",
 		UNLINK => 1
 	);
-	my $response = $http->mirror("$url?tl=$lang&q=$line", $mp3_name);
+	my $headers = {
+		'Accept'          => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
+		'Referer'         => 'https://translate.google.co.uk/',
+		'Accept-Language' => 'en-US,en;q=0.5',
+	};
+	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t", $mp3_name, $headers);
 	if (!$response->{success}) {
 		say_msg("Failed to fetch speech data.");
 		exit 1;

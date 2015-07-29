@@ -174,7 +174,7 @@ if ($use_ssl) {
 	$url = "http://" . $host;
 	$ua  = LWP::UserAgent->new;
 }
-$ua->agent("Mozilla/5.0 (X11; Linux i686; rv:27.0) Gecko/20100101");
+$ua->agent("Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
@@ -199,14 +199,19 @@ foreach my $line (@text) {
 		}
 	}
 	$line = uri_escape($line);
-	warn "$name URL passed: $url?tl=$lang&q=$line\n" if ($debug);
+	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	my $ua_request = HTTP::Request->new('GET' => "$url?tl=$lang&q=$line");
+	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=1&idx=0&client=t");
+	$ua_request->header(
+		'Accept'          => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
+		'Referer'         => 'https://translate.google.co.uk/',
+		'Accept-Language' => 'en-US,en;q=0.5',
+	);
 	my $ua_response = $ua->request($ua_request, $tmpname);
 	die "$name Failed to fetch file.\n" unless ($ua_response->is_success);
 

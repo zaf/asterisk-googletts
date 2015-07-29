@@ -1,3 +1,12 @@
+2015-29-07 Lefteris Zafiris <zaf.000@gmail.com> - 0.8
+	Compatibility fixes for the updated translate page.
+	Set default speed factor to 1. Small changes to cache path handling.
+	Fixed UTF handling and URL escaping. Updated text splitting function,
+	char limit seems to be 99 for some languages.
+	Enabled sox auto-detection by default.
+	Added SSL support and made it the default.
+	Added 'tiny' versions of the tts scripts.
+
 2012-30-09 Lefteris Zafiris <zaf.000@gmail.com> - 0.7
 	Added user defined speed factor option from dialplan.
 	Sox version auto-detection.	Automatic sound format detection.
