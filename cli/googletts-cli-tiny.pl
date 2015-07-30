@@ -57,7 +57,7 @@ for ($input) {
 	$_ .= "." unless (/^.+[.,?!:;]$/);
 	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
-my $size = @text;
+my $lines = @text;
 
 # Initialise User angent #
 my $http = HTTP::Tiny->new(
@@ -66,7 +66,7 @@ my $http = HTTP::Tiny->new(
 	verify_SSL => 1,
 );
 
-for (my $i=0; $i < $size; $i++) {
+for (my $i=0; $i < $lines; $i++) {
 	# Get speech data from google and save them in temp files #
 	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
@@ -83,7 +83,7 @@ for (my $i=0; $i < $size; $i++) {
 		'Referer' => 'https://translate.google.co.uk/',
 		'Accept-Language' => 'en-US,en;q=0.5',
 	};
-	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t", $mp3_name, $headers);
+	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t", $mp3_name, $headers);
 
 	if (!$response->{success}) {
 		say_msg("Failed to fetch speech data.");

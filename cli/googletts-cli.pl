@@ -3,7 +3,7 @@
 #
 # Script that uses Google Translate for text to speech synthesis.
 #
-# Copyright (C) 2012 - 20145 Lefteris Zafiris <zaf.000@gmail.com>
+# Copyright (C) 2012 - 2015, Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2.
@@ -58,7 +58,7 @@ for ($input) {
 	$_ .= "." unless (/^.+[.,?!:;]$/);
 	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
-my $size = @text;
+my $lines = @text;
 
 # Initialise User angent #
 my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 1 });
@@ -67,7 +67,7 @@ $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
-for (my $i=0; $i < $size; $i++) {
+for (my $i=0; $i < $lines; $i++) {
 	# Get speech data from google and save them in temp files #
 	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
@@ -79,7 +79,7 @@ for (my $i=0; $i < $size; $i++) {
 		SUFFIX => ".mp3",
 		UNLINK => 1
 	);
-	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t");
+	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t");
 	$request->header(
 		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
 		'Referer' => 'https://translate.google.co.uk/',

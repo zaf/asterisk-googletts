@@ -92,7 +92,6 @@ while (<STDIN>) {
 	last if (!length);
 	$AGI{$1} = $2 if (/^agi_(\w+)\:\s+(.*)$/);
 }
-
 my $name = " -- $AGI{request}:";
 
 # Abort if required programs not found. #
@@ -111,7 +110,7 @@ for ($AGI{arg_1}) {
 	$_ .= "." unless (/^.+[.,?!:;]$/);
 	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
-my $size = @text;
+my $lines = @text;
 
 # Setting language, interrupt keys and speed rate #
 if (length($AGI{arg_2})) {
@@ -163,7 +162,7 @@ $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
-for (my $i=0; $i < $size; $i++) {
+for (my $i=0; $i < $lines; $i++) {
 	my $filename;
 	my $res;
 	my $line = encode('utf8', $text[$i]);
@@ -185,14 +184,14 @@ for (my $i=0; $i < $size; $i++) {
 		}
 	}
 	$line = uri_escape($line);
-	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t\n" if ($debug);
+	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
-	my ($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t");
+	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
+	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t");
 	$ua_request->header(
 		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
 		'Referer' => 'https://translate.google.co.uk/',

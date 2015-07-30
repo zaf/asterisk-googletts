@@ -104,7 +104,7 @@ for ($AGI{arg_1}) {
 	$_ .= "." unless (/^.+[.,?!:;]$/);
 	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
-my $size = @text;
+my $lines = @text;
 
 # Setting language, interrupt keys and speed rate #
 if (length($AGI{arg_2})) {
@@ -147,7 +147,7 @@ elsif ($samplerate == 16000) { $fexten = "sln16"; }
 elsif ($samplerate == 32000) { $fexten = "sln32"; }
 elsif ($samplerate == 44100) { $fexten = "sln44"; }
 elsif ($samplerate == 48000) { $fexten = "sln48"; }
-else                         { ($fexten, $samplerate) =  ("sln", 8000); }
+else                         { ($fexten, $samplerate) = ("sln", 8000); }
 
 # Initialise User angent #
 my $http = HTTP::Tiny->new(
@@ -156,7 +156,7 @@ my $http = HTTP::Tiny->new(
 	verify_SSL => 1,
 );
 
-for (my $i=0; $i < $size; $i++)  {
+for (my $i=0; $i < $lines; $i++) {
 	my $filename;
 	my $res;
 	my $line = encode('utf8', $text[$i]);
@@ -178,7 +178,7 @@ for (my $i=0; $i < $size; $i++)  {
 		}
 	}
 	$line = uri_escape($line);
-	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t\n" if ($debug);
+	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
@@ -190,7 +190,7 @@ for (my $i=0; $i < $size; $i++)  {
 		'Referer' => 'https://translate.google.co.uk/',
 		'Accept-Language' => 'en-US,en;q=0.5',
 	};
-	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t", $tmpname, $headers);
+	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t", $tmpname, $headers);
 	die "$name Failed to fetch file.\n" unless ($response->{success});
 	# Detect required programs #
 	if (!$sox || !$mpg123) {
