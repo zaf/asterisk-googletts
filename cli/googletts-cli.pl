@@ -23,7 +23,6 @@ my @text;
 my @mp3list;
 my $samplerate;
 my $input;
-my $index   = 0;
 my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
@@ -68,9 +67,9 @@ $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
-foreach my $line (@text) {
+for (my $i=0; $i < $size; $i++) {
 	# Get speech data from google and save them in temp files #
-	$line = encode('utf8', $line);
+	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
 	$line = uri_escape($line);
@@ -80,7 +79,7 @@ foreach my $line (@text) {
 		SUFFIX => ".mp3",
 		UNLINK => 1
 	);
-	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t");
+	my $request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t");
 	$request->header(
 		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
 		'Referer' => 'https://translate.google.co.uk/',
@@ -94,7 +93,6 @@ foreach my $line (@text) {
 	} else {
 		push(@mp3list, $mp3_name);
 	}
-	$index++;
 }
 
 # decode mp3s and concatenate #

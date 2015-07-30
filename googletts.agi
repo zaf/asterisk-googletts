@@ -77,7 +77,6 @@ my @text;
 my $fh;
 my $tmpname;
 my $fexten;
-my $index   = 0;
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
@@ -164,10 +163,10 @@ $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
-foreach my $line (@text) {
+for (my $i=0; $i < $size; $i++) {
 	my $filename;
 	my $res;
-	$line = encode('utf8', $line);
+	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
 	if ($debug) {
@@ -186,14 +185,14 @@ foreach my $line (@text) {
 		}
 	}
 	$line = uri_escape($line);
-	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t\n" if ($debug);
+	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
 	my ($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t");
+	my $ua_request = HTTP::Request->new('GET' => "$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t");
 	$ua_request->header(
 		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
 		'Referer' => 'https://translate.google.co.uk/',
@@ -223,7 +222,6 @@ foreach my $line (@text) {
 		unlink "$tmpname.$fexten";
 	}
 	last if ($res > 0);
-	$index++;
 }
 exit;
 

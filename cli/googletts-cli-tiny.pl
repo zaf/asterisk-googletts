@@ -22,7 +22,6 @@ my @text;
 my @mp3list;
 my $samplerate;
 my $input;
-my $index   = 0;
 my $speed   = 1;
 my $lang    = "en-US";
 my $tmpdir  = "/tmp";
@@ -67,9 +66,9 @@ my $http = HTTP::Tiny->new(
 	verify_SSL => 1,
 );
 
-foreach my $line (@text) {
+for (my $i=0; $i < $size; $i++) {
 	# Get speech data from google and save them in temp files #
-	$line = encode('utf8', $line);
+	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
 	$line = uri_escape($line);
@@ -84,7 +83,7 @@ foreach my $line (@text) {
 		'Referer' => 'https://translate.google.co.uk/',
 		'Accept-Language' => 'en-US,en;q=0.5',
 	};
-	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$index&client=t", $mp3_name, $headers);
+	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$size&idx=$i&client=t", $mp3_name, $headers);
 
 	if (!$response->{success}) {
 		say_msg("Failed to fetch speech data.");
@@ -92,7 +91,6 @@ foreach my $line (@text) {
 	} else {
 		push(@mp3list, $mp3_name);
 	}
-	$index++;
 }
 
 # decode mp3s and concatenate #
