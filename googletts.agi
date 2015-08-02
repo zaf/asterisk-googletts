@@ -182,6 +182,7 @@ for (my $i=0; $i < $lines; $i++) {
 		if (-r "$cachedir/$filename.$fexten") {
 			warn "$name File already in cache.\n" if ($debug);
 			$res = playback("$cachedir/$filename", $intkey);
+			die if ($res < 0);
 			last if ($res > 0);
 			next;
 		}
@@ -217,6 +218,7 @@ for (my $i=0; $i < $lines; $i++) {
 
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);
+	die if ($res < 0);
 	if ($usecache) {
 		warn "$name Saving file $filename to cache\n" if ($debug);
 		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
