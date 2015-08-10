@@ -263,12 +263,10 @@ sub playback {
 		checkresponse();
 		print "SET PRIORITY 1\n";
 		checkresponse();
-		return $response[0];
 	} elsif ($response[0] == -1) {
 		warn "$name Failed to play $file.\n";
-		return -1;
 	}
-	return 0;
+	return $response[0];
 }
 
 sub detect_format {
