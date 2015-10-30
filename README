@@ -2,14 +2,14 @@
        Google TTS script for Asterisk
 =============================================
 
-As of October 2015 Google has severely restricted the availability of
-speech data to 3rd parties via the translate page. This script is
-now considered obsolete and people looking for TTS solutions should
-look for alternative services.
-
 This script makes use of Google's translate text to speech service
 in order to render text to speech and play it back to the user.
 It supports a variety of different languages.
+
+This TTS service is 'unofficial' and not supported by Google,
+it can be terminated at any point with no warning.
+People looking for TTS solutions to base their projects/products on
+should look for alternative, officially supported  services.
 
 ------------
 Requirements

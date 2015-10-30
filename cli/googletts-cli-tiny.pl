@@ -11,6 +11,7 @@
 
 use warnings;
 use strict;
+use utf8;
 use Encode qw(decode encode);
 use Getopt::Std;
 use File::Temp qw(tempfile);
@@ -23,10 +24,10 @@ my @mp3list;
 my $samplerate;
 my $input;
 my $speed   = 1;
-my $lang    = "en-US";
+my $lang    = "en";
 my $tmpdir  = "/tmp";
 my $timeout = 10;
-my $url     = "https://translate.google.com/translate_tts";
+my $url     = "https://translate.google.com";
 my $mpg123  = `/usr/bin/which mpg123`;
 my $sox     = `/usr/bin/which sox`;
 
@@ -61,13 +62,14 @@ my $lines = @text;
 
 # Initialise User angent #
 my $http = HTTP::Tiny->new(
-	agent => 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.107 Safari/537.36',
+	agent => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
 	timeout    => $timeout,
 	verify_SSL => 1,
 );
 
 for (my $i=0; $i < $lines; $i++) {
 	# Get speech data from google and save them in temp files #
+	my $len = length($text[$i]);
 	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
@@ -79,11 +81,19 @@ for (my $i=0; $i < $lines; $i++) {
 		UNLINK => 1
 	);
 	my $headers = {
-		'Accept'  => 'audio/webm,audio/ogg,audio/wav,audio/*;q=0.9,application/ogg;q=0.7,video/*;q=0.6,*/*;q=0.5',
-		'Referer' => 'https://translate.google.co.uk/',
+		'Accept'  => '*/*',
+		'Accept-Encoding'  => 'identity;q=1, *;q=0',
 		'Accept-Language' => 'en-US,en;q=0.5',
+		'DNT' => '1',
+		'Range' => 'bytes=0-',
+		'Referer' => 'https://translate.google.com/',
 	};
-	my $response = $http->mirror("$url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t", $mp3_name, $headers);
+	my $token = int(rand(100000)) . "|" . int(rand(100000));
+	my $response = $http->mirror(
+			"$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token",
+			$mp3_name,
+			$headers,
+	);
 
 	if (!$response->{success}) {
 		say_msg("Failed to fetch speech data.");
@@ -165,7 +175,7 @@ sub VERSION_MESSAGE {
 		"Supported options:\n",
 		" -t <text>      text string to synthesize\n",
 		" -f <file>      text file to synthesize\n",
-		" -l <lang>      specify the language to use, defaults to 'en-US' (English)\n",
+		" -l <lang>      specify the language to use, defaults to 'en' (English)\n",
 		" -o <filename>  write output as WAV file\n",
 		" -r <rate>      specify the output sampling rate in Hertz (default 22050)\n",
 		" -s <factor>    specify the output speed factor\n",
