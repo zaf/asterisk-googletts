@@ -183,8 +183,6 @@ for (my $i=0; $i < $lines; $i++) {
 			next;
 		}
 	}
-	$line = uri_escape($line);
-	warn "$name URL passed: $url?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&client=t\n" if ($debug);
 
 	# Hnadle interrupts #
 	$SIG{'INT'} = \&int_handler;
@@ -199,9 +197,13 @@ for (my $i=0; $i < $lines; $i++) {
 		'Range' => 'bytes=0-',
 		'Referer' => 'https://translate.google.com/',
 	};
+	$line = uri_escape($line);
 	my $token = int(rand(100000)) . "|" . int(rand(100000));
+	my $req = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token";
+	warn "$name URL passed: $req\n" if ($debug);
+
 	my $response = $http->mirror(
-			"$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token",
+			$req,
 			$tmpname,
 			$headers,
 	);
