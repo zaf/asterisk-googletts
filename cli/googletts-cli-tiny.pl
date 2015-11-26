@@ -34,6 +34,7 @@ my $sox     = `/usr/bin/which sox`;
 VERSION_MESSAGE() if (!@ARGV);
 
 getopts('o:l:r:t:f:s:hqv', \%options);
+
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
 lang_list("dislpay") if (defined $options{v});
@@ -62,12 +63,12 @@ my $lines = @text;
 
 # Initialise User angent #
 my $http = HTTP::Tiny->new(
-	agent => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
+	agent      => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
 	timeout    => $timeout,
 	verify_SSL => 1,
 );
 
-for (my $i=0; $i < $lines; $i++) {
+for (my $i = 0; $i < $lines; $i++) {
 	# Get speech data from google and save them in temp files #
 	my $len = length($text[$i]);
 	my $line = encode('utf8', $text[$i]);
@@ -81,18 +82,18 @@ for (my $i=0; $i < $lines; $i++) {
 		UNLINK => 1
 	);
 	my $headers = {
-		'Accept'  => '*/*',
-		'Accept-Encoding'  => 'identity;q=1, *;q=0',
+		'Accept'          => '*/*',
+		'Accept-Encoding' => 'identity;q=1, *;q=0',
 		'Accept-Language' => 'en-US,en;q=0.5',
-		'DNT' => '1',
-		'Range' => 'bytes=0-',
-		'Referer' => 'https://translate.google.com/',
+		'DNT'             => '1',
+		'Range'           => 'bytes=0-',
+		'Referer'         => 'https://translate.google.com/',
 	};
 	my $token = int(rand(100000)) . "|" . int(rand(100000));
 	my $response = $http->mirror(
-			"$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token",
-			$mp3_name,
-			$headers,
+		"$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token",
+		$mp3_name,
+		$headers,
 	);
 
 	if (!$response->{success}) {
@@ -151,16 +152,19 @@ sub parse_options {
 		say_msg("No text passed for synthesis.");
 		exit 1;
 	}
+
 	# set the speech language #
 	if (defined $options{l}) {
 		$options{l} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2})?$/ ? $lang = $options{l}
 			: say_msg("Invalid language setting, using default.");
 	}
+
 	# set audio sample rate #
 	if (defined $options{r}) {
 		$options{r} =~ /\d+/ ? $samplerate = $options{r}
 			: say_msg("Invalid sample rate, using default.");
 	}
+
 	# set speed factor #
 	if (defined $options{s}) {
 		$options{s} =~ /\d+/ ? $speed = $options{s}

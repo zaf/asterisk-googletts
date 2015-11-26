@@ -35,6 +35,7 @@ my $sox     = `/usr/bin/which sox`;
 VERSION_MESSAGE() if (!@ARGV);
 
 getopts('o:l:r:t:f:s:hqv', \%options);
+
 # Dislpay help messages #
 VERSION_MESSAGE() if (defined $options{h});
 lang_list("dislpay") if (defined $options{v});
@@ -68,7 +69,7 @@ $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
 
-for (my $i=0; $i < $lines; $i++) {
+for (my $i = 0; $i < $lines; $i++) {
 	# Get speech data from google and save them in temp files #
 	my $len = length($text[$i]);
 	my $line = encode('utf8', $text[$i]);
@@ -81,15 +82,15 @@ for (my $i=0; $i < $lines; $i++) {
 		SUFFIX => ".mp3",
 		UNLINK => 1
 	);
-	my $token = int(rand(100000)) . "|" . int(rand(100000));
+	my $token   = int(rand(100000)) . "|" . int(rand(100000));
 	my $request = HTTP::Request->new('GET' => "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token");
 	$request->header(
-		'Accept' => '*/*',
-		'Accept-Encoding'  => 'identity;q=1, *;q=0',
+		'Accept'          => '*/*',
+		'Accept-Encoding' => 'identity;q=1, *;q=0',
 		'Accept-Language' => 'en-US,en;q=0.5',
-		'DNT' => '1',
-		'Range' => 'bytes=0-',
-		'Referer' => 'https://translate.google.com/',
+		'DNT'             => '1',
+		'Range'           => 'bytes=0-',
+		'Referer'         => 'https://translate.google.com/',
 	);
 	my $response = $ua->request($request, $mp3_name);
 
@@ -154,11 +155,13 @@ sub parse_options {
 		$options{l} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2})?$/ ? $lang = $options{l}
 			: say_msg("Invalid language setting, using default.");
 	}
+
 	# set audio sample rate #
 	if (defined $options{r}) {
 		$options{r} =~ /\d+/ ? $samplerate = $options{r}
 			: say_msg("Invalid sample rate, using default.");
 	}
+
 	# set speed factor #
 	if (defined $options{s}) {
 		$options{s} =~ /\d+/ ? $speed = $options{s}

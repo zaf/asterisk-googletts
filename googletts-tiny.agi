@@ -160,7 +160,7 @@ my $http = HTTP::Tiny->new(
 	verify_SSL => 1,
 );
 
-for (my $i=0; $i < $lines; $i++) {
+for (my $i = 0; $i < $lines; $i++) {
 	my $filename;
 	my $res;
 	my $len = length($text[$i]);
@@ -174,11 +174,12 @@ for (my $i=0; $i < $lines; $i++) {
 	}
 	if ($usecache) {
 		$filename = md5_hex("$line.$lang.$speed");
+
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
 			warn "$name File already in cache.\n" if ($debug);
 			$res = playback("$cachedir/$filename", $intkey);
-			die if ($res < 0);
+			die  if ($res < 0);
 			last if ($res > 0);
 			next;
 		}
@@ -190,28 +191,26 @@ for (my $i=0; $i < $lines; $i++) {
 
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
 	my $headers = {
-		'Accept'  => '*/*',
-		'Accept-Encoding'  => 'identity;q=1, *;q=0',
+		'Accept'          => '*/*',
+		'Accept-Encoding' => 'identity;q=1, *;q=0',
 		'Accept-Language' => 'en-US,en;q=0.5',
-		'DNT' => '1',
-		'Range' => 'bytes=0-',
-		'Referer' => 'https://translate.google.com/',
+		'DNT'             => '1',
+		'Range'           => 'bytes=0-',
+		'Referer'         => 'https://translate.google.com/',
 	};
 	$line = uri_escape($line);
 	my $token = int(rand(100000)) . "|" . int(rand(100000));
-	my $req = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token";
+	my $req   = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token";
 	warn "$name URL passed: $req\n" if ($debug);
 
-	my $response = $http->mirror(
-			$req,
-			$tmpname,
-			$headers,
-	);
+	my $response = $http->mirror($req, $tmpname, $headers,);
 	die "$name Failed to fetch file.\n" unless ($response->{success});
+
 	# Detect required programs #
 	if (!$sox || !$mpg123) {
 		$sox    = `/usr/bin/which sox`;
 		$mpg123 = `/usr/bin/which mpg123`;
+
 		# Abort if required programs not found. #
 		die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
 		chomp($sox, $mpg123);
@@ -220,6 +219,7 @@ for (my $i=0; $i < $lines; $i++) {
 		$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
 		warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
 	}
+
 	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
 		or die "$name $mpg123 failed: $?\n";
@@ -276,7 +276,7 @@ sub playback {
 }
 
 sub detect_format {
-# Detect the sound format used #
+	# Detect the sound format used #
 	my @format;
 	print "GET FULL VARIABLE \${CHANNEL(audionativeformat)}\n";
 	my @reply = checkresponse();
@@ -292,7 +292,7 @@ sub detect_format {
 }
 
 sub get_sox_args {
-# Set the appropiate sox cli arguments #
+	# Set the appropiate sox cli arguments #
 	my ($source_file, $dest_file) = @_;
 
 	my @soxargs = ($sox, $source_file, "-q", "-r", $samplerate, "-t", "raw", $dest_file);
@@ -300,7 +300,7 @@ sub get_sox_args {
 		if ($sox_ver >= 14) {
 			push(@soxargs, ("tempo", "-s", $speed));
 		} else {
-			push(@soxargs, ("stretch", 1/$speed, "80"));
+			push(@soxargs, ("stretch", 1 / $speed, "80"));
 		}
 	}
 	return @soxargs;
