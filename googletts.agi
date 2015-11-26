@@ -200,7 +200,7 @@ for (my $i=0; $i < $lines; $i++) {
 	my $req = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token";
 	warn "$name URL passed: $req\n" if ($debug);
 
-	my $ua_request = HTTP::Request->new( 'GET' => "req" );
+	my $ua_request = HTTP::Request->new( 'GET' => $req );
 	$ua_request->header(
 		'Accept' => '*/*',
 		'Accept-Encoding'  => 'identity;q=1, *;q=0',
