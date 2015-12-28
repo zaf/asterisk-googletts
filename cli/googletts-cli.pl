@@ -75,6 +75,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	my $line = encode('utf8', $text[$i]);
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
+	my $token   = make_token($line);
 	$line = uri_escape($line);
 	my ($mp3_fh, $mp3_name) = tempfile(
 		"tts_XXXXXX",
@@ -82,8 +83,8 @@ for (my $i = 0; $i < $lines; $i++) {
 		SUFFIX => ".mp3",
 		UNLINK => 1
 	);
-	my $token   = int(rand(100000)) . "|" . int(rand(100000));
-	my $request = HTTP::Request->new('GET' => "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token");
+
+	my $request = HTTP::Request->new('GET' => "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token&prev=input");
 	$request->header(
 		'Accept'          => '*/*',
 		'Accept-Encoding' => 'identity;q=1, *;q=0',
@@ -168,6 +169,49 @@ sub parse_options {
 			: say_msg("Invalind speed factor, using default.");
 	}
 	return;
+}
+
+# Obfuscated crap straight from Google:
+# https://translate.google.com/translate/releases/twsfe_w_20151214_RC03/r/js/desktop_module_main.js
+sub make_token {
+	my $text = shift;
+	my $time = int(time() / 3600);
+	my @chars = unpack('U*', $text);
+	my $stamp = $time;
+
+	foreach (@chars) {
+		$stamp = make_rl($stamp + $_, '+-a^+6');
+	}
+	$stamp = make_rl($stamp, '+-3^+b+-f');
+	if ($stamp < 0) {
+		$stamp = ($stamp & 2147483647) + 2147483648;
+	}
+	$stamp %= 10**6;
+	return ($stamp . '.' . ($stamp ^ $time));
+}
+
+sub make_rl {
+	my ($num, $str) = @_;
+
+	for (my $i = 0; $i < length($str) - 2 ; $i += 3) {
+		my $d = substr($str, $i+2, 1);
+		if (ord($d) >= ord('a')) {
+			$d = ord($d) - 87;
+		} else {
+			$d = int($d);
+		}
+		if (substr($str, $i+1, 1) eq '+') {
+			$d = $num >> $d;
+		} else {
+			$d = $num << $d;
+		}
+		if (substr($str, $i, 1) eq '+') {
+			$num = $num + $d & 4294967295;
+		} else {
+			$num = $num ^ $d;
+		}
+	}
+	return $num;
 }
 
 sub VERSION_MESSAGE {
