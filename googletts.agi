@@ -196,7 +196,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	$SIG{'HUP'} = \&int_handler;
 
 	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
-	my $token = make_tone($line);
+	my $token = make_token($line);
 	$line = uri_escape($line);
 	my $req   = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token&prev=input";
 	warn "$name URL passed: $req\n" if ($debug);
