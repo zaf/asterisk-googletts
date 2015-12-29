@@ -100,7 +100,7 @@ for ($AGI{arg_1}) {
 	s/[\\|*~<>^\(\)\[\]\{\}[:cntrl:]]/ /g;
 	s/\s+/ /g;
 	s/^\s|\s$//g;
-	die "$name No text passed for synthesis.\n" if (!length);
+	fatal_log("No text passed for synthesis.") if (!length);
 	# Split input to comply with google tts requirements #
 	$_ .= "." unless (/^.+[.,?!:;]$/);
 	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
@@ -112,7 +112,7 @@ if (length($AGI{arg_2})) {
 	if ($AGI{arg_2} =~ /^[a-zA-Z]{2}(-[a-zA-Z]{2,6})?$/) {
 		$lang = $AGI{arg_2};
 	} else {
-		warn "$name Invalid language setting. Using default.\n";
+		console_log("Invalid language setting. Using default.");
 	}
 }
 
@@ -126,11 +126,13 @@ if (length($AGI{arg_4})) {
 }
 
 # Check cache path size: dir length + md5 + file extension #
-if ($usecache && ((length($cachedir) + 32 + 6) < $maxlen)) {
-	mkpath("$cachedir") unless (-d "$cachedir");
-} else {
-	warn "$name Cache path size exceeds limit. Disabling cache.\n";
-	$usecache = 0;
+if ($usecache) {
+	if ((length($cachedir) + 32 + 6) < $maxlen) {
+		mkpath("$cachedir") unless (-d "$cachedir");
+	} else {
+		console_log("Cache path size exceeds limit. Disabling cache.");
+		$usecache = 0;
+	}
 }
 
 # Answer channel if not already answered #
@@ -140,7 +142,7 @@ if ($result[0] == 4) {
 	print "ANSWER\n";
 	@result = checkresponse();
 	if ($result[0] != 0) {
-		die "$name Failed to answer channel.\n";
+		fatal_log("Failed to answer channel.");
 	}
 }
 
@@ -168,16 +170,17 @@ for (my $i = 0; $i < $lines; $i++) {
 	$line =~ s/^\s+|\s+$//g;
 	next if (length($line) == 0);
 	if ($debug) {
-		warn "$name Text passed for synthesis: $line\n",
-			"$name Language: $lang, Interrupt keys: $intkey, Sample rate: $samplerate\n",
-			"$name Speed: $speed, Caching: $usecache, Cache dir: $cachedir\n";
+		console_log("Text passed for synthesis: $line",
+			"Language: $lang, Interrupt keys: $intkey, Sample rate: $samplerate",
+			"Speed: $speed, Caching: $usecache, Cache dir: $cachedir"
+		);
 	}
 	if ($usecache) {
 		$filename = md5_hex("$line.$lang.$speed");
 
 		# Stream file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
-			warn "$name File already in cache.\n" if ($debug);
+			console_log("File already in cache.") if ($debug);
 			$res = playback("$cachedir/$filename", $intkey);
 			die  if ($res < 0);
 			last if ($res > 0);
@@ -189,7 +192,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
-	($fh, $tmpname) = tempfile("ggl_XXXXXX", DIR => $tmpdir, UNLINK => 1);
+	($fh, $tmpname) = tempfile("ggl_XXXXXXXX", DIR => $tmpdir, UNLINK => 1);
 	my $headers = {
 		'Accept'          => '*/*',
 		'Accept-Encoding' => 'identity;q=1, *;q=0',
@@ -201,10 +204,10 @@ for (my $i = 0; $i < $lines; $i++) {
 	my $token = make_token($line);
 	$line = uri_escape($line);
 	my $req   = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token&prev=input";
-	warn "$name URL passed: $req\n" if ($debug);
+	console_log("URL passed: $req") if ($debug);
 
 	my $response = $http->mirror($req, $tmpname, $headers,);
-	die "$name Failed to fetch file.\n" unless ($response->{success});
+	fatal_log("Failed to fetch file.") unless ($response->{success});
 
 	# Detect required programs #
 	if (!$sox || !$mpg123) {
@@ -212,27 +215,27 @@ for (my $i = 0; $i < $lines; $i++) {
 		$mpg123 = `/usr/bin/which mpg123`;
 
 		# Abort if required programs not found. #
-		die "$name sox or mpg123 is missing. Aborting.\n" if (!$sox || !$mpg123);
+		fatal_log("sox or mpg123 is missing. Aborting.") if (!$sox || !$mpg123);
 		chomp($sox, $mpg123);
 	}
 	if (!$sox_ver) {
 		$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
-		warn "$name Found sox version $sox_ver in: $sox, mpg123 in: $mpg123\n" if ($debug);
+		console_log("Found sox version $sox_ver in: $sox, mpg123 in: $mpg123") if ($debug);
 	}
 
 	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
-		or die "$name $mpg123 failed: $?\n";
+		or fatal_log("$mpg123 failed: $?");
 
 	my @soxargs = get_sox_args("$tmpname.wav", "$tmpname.$fexten");
-	system(@soxargs) == 0 or die "$name $sox failed: $?\n";
+	system(@soxargs) == 0 or fatal_log("$sox failed: $?");
 	unlink "$tmpname.wav";
 
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);
 	die if ($res < 0);
 	if ($usecache) {
-		warn "$name Saving file $filename to cache\n" if ($debug);
+		console_log("Saving file $filename to cache") if ($debug);
 		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
 	} else {
 		unlink "$tmpname.$fexten";
@@ -247,7 +250,6 @@ sub checkresponse {
 
 	chomp $input;
 	if ($input =~ /^200 result=(-?\d+)\s?(.*)$/) {
-		warn "$name Command returned: $input\n" if ($debug);
 		@values = ("$1", "$2");
 	} else {
 		$input .= <STDIN> if ($input =~ /^520-Invalid/);
@@ -264,13 +266,13 @@ sub playback {
 	print "STREAM FILE $file \"$keys\"\n";
 	@response = checkresponse();
 	if ($response[0] >= 32 && chr($response[0]) =~ /[\w*#]/) {
-		warn "$name Got digit ", chr($response[0]), "\n" if ($debug);
+		console_log("Got digit chr($response[0])") if ($debug);
 		print "SET EXTENSION ", chr($response[0]), "\n";
 		checkresponse();
 		print "SET PRIORITY 1\n";
 		checkresponse();
 	} elsif ($response[0] == -1) {
-		warn "$name Failed to play $file.\n";
+		console_log("Failed to play $file.");
 	}
 	return $response[0];
 }
@@ -347,6 +349,19 @@ sub make_rl {
 		}
 	}
 	return $num;
+}
+
+sub console_log {
+	foreach my $message (@_) {
+		warn "$name $message\n";
+		print "NOOP \"$name $message\"\n";
+		checkresponse();
+	}
+}
+
+sub fatal_log {
+	console_log(@_);
+	die;
 }
 
 sub int_handler {
