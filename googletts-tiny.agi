@@ -31,6 +31,10 @@
 # Chache directory:  $cachedir
 # SoX Version:       $sox_ver
 #
+# Tiny version drops the use of mpg123 and requires MP3 format support in sox.
+# It also makes the assumption that sox is in /usr/bin/ in order
+# to skip detection and speed things up.
+#
 
 use warnings;
 use strict;
@@ -77,8 +81,8 @@ my @text;
 my $fh;
 my $tmpname;
 my $fexten;
-my $sox;
-my $mpg123;
+my $http;
+my $sox     = "/usr/bin/sox";
 my $intkey  = "";
 my $tmpdir  = "/tmp";
 my $maxlen  = 4096;
@@ -155,13 +159,6 @@ elsif ($samplerate == 44100) { $fexten = "sln44"; }
 elsif ($samplerate == 48000) { $fexten = "sln48"; }
 else                         { ($fexten, $samplerate) = ("sln", 8000); }
 
-# Initialise User angent #
-my $http = HTTP::Tiny->new(
-	agent      => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
-	timeout    => $timeout,
-	verify_SSL => 1,
-);
-
 for (my $i = 0; $i < $lines; $i++) {
 	my $filename;
 	my $res;
@@ -192,6 +189,15 @@ for (my $i = 0; $i < $lines; $i++) {
 	$SIG{'INT'} = \&int_handler;
 	$SIG{'HUP'} = \&int_handler;
 
+	# Initialise User angent #
+	if (!$http) {
+		$http = HTTP::Tiny->new(
+		agent      => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36',
+		timeout    => $timeout,
+		verify_SSL => 1,
+		);
+	}
+
 	($fh, $tmpname) = tempfile("ggl_XXXXXXXX", DIR => $tmpdir, UNLINK => 1);
 	my $headers = {
 		'Accept'          => '*/*',
@@ -209,27 +215,8 @@ for (my $i = 0; $i < $lines; $i++) {
 	my $response = $http->mirror($req, $tmpname, $headers,);
 	fatal_log("Failed to fetch file.") unless ($response->{success});
 
-	# Detect required programs #
-	if (!$sox || !$mpg123) {
-		$sox    = `/usr/bin/which sox`;
-		$mpg123 = `/usr/bin/which mpg123`;
-
-		# Abort if required programs not found. #
-		fatal_log("sox or mpg123 is missing. Aborting.") if (!$sox || !$mpg123);
-		chomp($sox, $mpg123);
-	}
-	if (!$sox_ver) {
-		$sox_ver = (system("$sox --version > /dev/null 2>&1") == 0) ? 14 : 12;
-		console_log("Found sox version $sox_ver in: $sox, mpg123 in: $mpg123") if ($debug);
-	}
-
-	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
-	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
-		or fatal_log("$mpg123 failed: $?");
-
-	my @soxargs = get_sox_args("$tmpname.wav", "$tmpname.$fexten");
+	my @soxargs = get_sox_args($tmpname, "$tmpname.$fexten");
 	system(@soxargs) == 0 or fatal_log("$sox failed: $?");
-	unlink "$tmpname.wav";
 
 	# Playback and save file in cache #
 	$res = playback($tmpname, $intkey);
@@ -297,7 +284,7 @@ sub get_sox_args {
 	# Set the appropiate sox cli arguments #
 	my ($source_file, $dest_file) = @_;
 
-	my @soxargs = ($sox, $source_file, "-q", "-r", $samplerate, "-t", "raw", $dest_file);
+	my @soxargs = ($sox, "-t", "mp3", $source_file, "-q", "-r", $samplerate, "-t", "raw", $dest_file);
 	if ($speed != 1) {
 		if ($sox_ver >= 14) {
 			push(@soxargs, ("tempo", "-s", $speed));
