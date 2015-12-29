@@ -213,7 +213,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	console_log("URL passed: $req") if ($debug);
 
 	my $response = $http->mirror($req, $tmpname, $headers,);
-	fatal_log("Failed to fetch file.") unless ($response->{success});
+	fatal_log("Failed to fetch file: ", $response->{status}, $response->{reason}) unless ($response->{success});
 
 	my @soxargs = get_sox_args($tmpname, "$tmpname.$fexten");
 	system(@soxargs) == 0 or fatal_log("$sox failed: $?");

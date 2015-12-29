@@ -96,7 +96,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	my $response = $ua->request($request, $mp3_name);
 
 	if (!$response->is_success) {
-		say_msg("Failed to fetch speech data.");
+		say_msg("Failed to fetch speech data: ", $response->code, $response->message);
 		exit 1;
 	} else {
 		push(@mp3list, $mp3_name);

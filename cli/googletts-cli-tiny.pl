@@ -97,7 +97,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	);
 
 	if (!$response->{success}) {
-		say_msg("Failed to fetch speech data.");
+		say_msg("Failed to fetch speech data: ", $response->{status}, $response->{reason});
 		exit 1;
 	} else {
 		push(@mp3list, $mp3_name);

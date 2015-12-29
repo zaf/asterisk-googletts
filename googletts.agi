@@ -213,7 +213,7 @@ for (my $i = 0; $i < $lines; $i++) {
 		'Referer'         => 'https://translate.google.com/',
 	);
 	my $ua_response = $ua->request($ua_request, $tmpname);
-	fatal_log("Failed to fetch file.") unless ($ua_response->is_success);
+	fatal_log("Failed to fetch file: ", $ua_response->code, $ua_response->message) unless ($ua_response->is_success);
 
 	# Convert mp3 file to 16bit 8Khz or 16kHz mono raw #
 	system($mpg123, "-q", "-w", "$tmpname.wav", $tmpname) == 0
