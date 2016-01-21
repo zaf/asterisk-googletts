@@ -16,7 +16,7 @@ Requirements
 ------------
 Perl         The Perl Programming Language
 perl-libwww  The World-Wide Web library for Perl
-perl-Crypt-SSLeay or perl-IO-Socket-SSL for use of SSL/TLS encryption
+perl-Crypt-SSLeay or perl-IO-Socket-SSL for SSL/TLS encryption
 sox          Sound eXchange, sound processing program
 mpg123       MPEG Audio Player and decoder
 Internet access in order to contact google and get the voice data.
@@ -38,7 +38,7 @@ cause the playback to immediately terminate and the dialplan to proceed to the
 matching extension (this is mainly for use in IVR, see README for examples).
 If 'speed' is set the speech rate is altered by that factor (defaults to 1.2).
 
-The script contacts google's TTS service in order to get the voice data
+The script contacts Google's TTS service in order to get the voice data
 which then stores in a local cache (by default /tmp/) for future use.
 Parameters like default language, enabling or disabling caching and cache dir
 can be set up by editing the script.
@@ -208,8 +208,8 @@ Zulu:               zu
 -----------------------
 Security Considerations
 -----------------------
-This script contacts googles' servers in order to get voice data.
-The script uses TLS to encrypt all the traffic between your pbx and google servers
+This script contacts Google servers in order to get voice data.
+The script uses TLS to encrypt all the traffic between your pbx and these servers
 so no 3rd party can eavesdrop your communication, but your data will be available
 to Google under a not yet defined policy.
 
@@ -223,6 +223,7 @@ of the TTS scripts and expose the same interface/cli args. To use them just make
 you have HTTP::Tiny installed.
 In debian or ubuntu based distros: 'apt-get install libhttp-tiny-perl'
 In distros that don't have it in their repos: 'cpan HTTP::Tiny'
+It also requires mp3 format support in sox in order to avoid the use of mpg123.
 
 -------
 License
