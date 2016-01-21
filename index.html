@@ -6,7 +6,7 @@
   <meta name="generator" content="HTML Tidy for Linux/x86 (vers 25 March 2009), see www.w3.org" />
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-  <title>Text to speech synthesis using Google Translate for Asterisk PBX</title>
+  <title>Text to speech using Google Translate for Asterisk PBX</title>
   <meta name="description" content=
   "Asterisk AGI script that uses Googles' translate text to speech service." />
   <style type="text/css">
@@ -67,6 +67,11 @@
     <a href="https://raw.github.com/zaf/asterisk-googletts/master/README">README</a> for a complete
     list), local caching of the voice data and also supports 8kHz or 16kHz sample rates to provide
     the best possible sound quality along with the use of wideband codecs.</p>
+
+    <p><b>This TTS service is 'unofficial' and not supported by Google,
+	it can be terminated at any point with no warning.
+	People looking for TTS solutions to base their projects/products on
+	should look for alternative, officially supported services.</b></p>
 
     <h2>Dependencies</h2>
 
@@ -146,12 +151,9 @@ exten =&gt; h,1,Hangup()
 
     <h2>Download</h2>
 
-    <p>You can get the latest stable version <a href=
-    "https://github.com/downloads/zaf/asterisk-googletts/asterisk-googletts-0.6.tar.gz">here</a>.<br />
-
-    Develompent snapshots are available in either <a href=
+    <p>The latest version is available in either <a href=
     "http://github.com/zaf/asterisk-googletts/zipball/master">zip</a> or <a href=
-    "http://github.com/zaf/asterisk-googletts/tarball/master">tar</a> formats.</p>
+    "http://github.com/zaf/asterisk-googletts/tarball/master">tar</a> format.</p>
 
     <p>You can also clone the project with <a href="http://git-scm.com">Git</a> by running:</p>
     <pre>
@@ -173,18 +175,6 @@ $ git clone git://github.com/zaf/asterisk-googletts
       get the source code on GitHub : <a href=
       "http://github.com/zaf/asterisk-googletts">zaf/asterisk-googletts</a>
     </div>
-  </div><script type="text/javascript">
-//<![CDATA[
-  var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-  document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-  //]]>
-  </script><script type="text/javascript">
-//<![CDATA[
-  try {
-  var pageTracker = _gat._getTracker("UA-10482811-3");
-  pageTracker._trackPageview();
-  } catch(err) {}
-  //]]>
-  </script>
+  </div>
 </body>
 </html>
