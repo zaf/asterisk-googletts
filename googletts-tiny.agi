@@ -209,7 +209,7 @@ for (my $i = 0; $i < $lines; $i++) {
 	};
 	my $token = make_token($line);
 	$line = uri_escape($line);
-	my $req   = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token&prev=input";
+	my $req   = "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=tw-ob&tk=$token&prev=input";
 	console_log("URL passed: $req") if ($debug);
 
 	my $response = $http->mirror($req, $tmpname, $headers,);
