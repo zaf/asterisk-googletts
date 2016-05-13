@@ -91,7 +91,7 @@ for (my $i = 0; $i < $lines; $i++) {
 		'Referer'         => 'https://translate.google.com/',
 	};
 	my $response = $http->mirror(
-		"$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token&prev=input",
+		"$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=tw-ob&tk=$token&prev=input",
 		$mp3_name,
 		$headers,
 	);

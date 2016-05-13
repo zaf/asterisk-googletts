@@ -84,7 +84,7 @@ for (my $i = 0; $i < $lines; $i++) {
 		UNLINK => 1
 	);
 
-	my $request = HTTP::Request->new('GET' => "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=t&tk=$token&prev=input");
+	my $request = HTTP::Request->new('GET' => "$url/translate_tts?ie=UTF-8&q=$line&tl=$lang&total=$lines&idx=$i&textlen=$len&client=tw-ob&tk=$token&prev=input");
 	$request->header(
 		'Accept'          => '*/*',
 		'Accept-Encoding' => 'identity;q=1, *;q=0',
