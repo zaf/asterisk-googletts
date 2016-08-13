@@ -1,4 +1,4 @@
-2015-29-07 Lefteris Zafiris <zaf.000@gmail.com> - 0.8
+2015-29-07 Lefteris Zafiris <zaf@fastmail.com> - 0.8
 	Compatibility fixes for the updated translate page.
 	Set default speed factor to 1. Small changes to cache path handling.
 	Fixed UTF handling and URL escaping. Updated text splitting function,
@@ -7,17 +7,17 @@
 	Added SSL support and made it the default.
 	Added 'tiny' versions of the tts scripts.
 
-2012-30-09 Lefteris Zafiris <zaf.000@gmail.com> - 0.7
+2012-30-09 Lefteris Zafiris <zaf@fastmail.com> - 0.7
 	Added user defined speed factor option from dialplan.
 	Sox version auto-detection.	Automatic sound format detection.
 	Proxy support. Improved temp file handling.
 	Use of 'ConnChace' to speed up http requests.
 
-2012-03-18 Lefteris Zafiris <zaf.000@gmail.com> - 0.6
+2012-03-18 Lefteris Zafiris <zaf@fastmail.com> - 0.6
 	Added speed factor option. Major rewrite of the cli app.
 	Many small fixes.
 
-2012-01-18 Lefteris Zafiris <zaf.000@gmail.com> - 0.5
+2012-01-18 Lefteris Zafiris <zaf@fastmail.com> - 0.5
 	Removed the waiting for user input after the end of playback.
 	It is now advised to use Waitexten() in IVR to get that behavior.
     Updated dialplan examples in README accordingly.
@@ -25,13 +25,13 @@
 	expressions. This fixes a misbehavior with some unicode strings.
 	Added sample cli app that does speech synthesis.
 
-2011-12-20 Lefteris Zafiris <zaf.000@gmail.com> - 0.4
+2011-12-20 Lefteris Zafiris <zaf@fastmail.com> - 0.4
 	Added option for verbose debugging messages.
 	Fixed interrupt handling and cleaning of temp files.
 	Multiline and unicode input is now properly handled.
 	Code cleanup.
 
-2011-12-13 Lefteris Zafiris <zaf.000@gmail.com> - 0.3
+2011-12-13 Lefteris Zafiris <zaf@fastmail.com> - 0.3
 	Fixed compatibility with asterisk 1.4 and older.
 	Changed the arguments of tempfile() for compatibility
 	with older perl versions.
@@ -39,12 +39,12 @@
 	Added check for channel status before answering.
 	When 'intkey' is set the script waits for user input.
 
-2011-12-01 Lefteris Zafiris <zaf.000@gmail.com> - 0.2
+2011-12-01 Lefteris Zafiris <zaf@fastmail.com> - 0.2
 	Working cache mechanism. Input sanitisation
 	and removal of dangerous characters. Better
 	error handling. Support for sampling rates
 	other than 8KHz. Cleanup mechanism for
 	temporary files.
 
-2011-11-28 Lefteris Zafiris <zaf.000@gmail.com> - 0.1
+2011-11-28 Lefteris Zafiris <zaf@fastmail.com> - 0.1
 	Initial release 0.1
