@@ -3,7 +3,7 @@
 #
 # AGI script that uses Google's translate text to speech engine.
 #
-# Copyright (C) 2011 - 2015, Lefteris Zafiris <zaf@fastmail.com>
+# Copyright (C) 2011 - 2015, Lefteris Zafiris <zaf.000@gmail.com>
 #
 # This program is free software, distributed under the terms of
 # the GNU General Public License Version 2. See the COPYING file
@@ -54,11 +54,14 @@ my $lang = "en";
 # Output speed factor           #
 my $speed = 1;
 
+# Playing or Returning file     #
+my $status = "playing";
+
 # Use of cache mechanism        #
 my $usecache = 1;
 
 # Cache directory path          #
-my $cachedir = "/tmp";
+my $cachedir = "/var/lib/asterisk/sounds/googletts/cache";
 
 # Output audio sample rate      #
 # Leave blank to auto-detect    #
@@ -69,7 +72,7 @@ my $samplerate = "";
 my $sox_ver = "";
 
 # Verbose debugging messages    #
-my $debug = 0;
+my $debug = 1;
 
 # ----------------------------- #
 
@@ -79,7 +82,7 @@ my $fh;
 my $tmpname;
 my $fexten;
 my $intkey  = "";
-my $tmpdir  = "/tmp";
+my $tmpdir  = "/var/lib/asterisk/sounds/googletts/tmp";
 my $maxlen  = 4096;
 my $timeout = 10;
 my $url     = "https://translate.google.com";
@@ -87,7 +90,7 @@ my $sox     = `/usr/bin/which sox`;
 my $mpg123  = `/usr/bin/which mpg123`;
 
 # Store AGI input #
-($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}, $AGI{arg_4}) = @ARGV;
+($AGI{arg_1}, $AGI{arg_2}, $AGI{arg_3}, $AGI{arg_4}, $AGI{arg_5}) = @ARGV;
 while (<STDIN>) {
 	chomp;
 	last if (!length);
@@ -128,6 +131,10 @@ if (length($AGI{arg_3})) {
 
 if (length($AGI{arg_4})) {
 	$speed = $AGI{arg_4} if ($AGI{arg_4} =~ /^\d+(\.\d+)?$/);
+}
+
+if (length($AGI{arg_5})) {
+	$status = $AGI{arg_5} if ($AGI{arg_5} eq "playing" || $AGI{arg_5} eq "returning");
 }
 
 # Check cache path size: dir length + md5 + file extension #
@@ -183,13 +190,18 @@ for (my $i = 0; $i < $lines; $i++) {
 	if ($usecache) {
 		$filename = md5_hex("$line.$lang.$speed");
 
-		# Stream file from cache if it exists #
+		# Stream or return file from cache if it exists #
 		if (-r "$cachedir/$filename.$fexten") {
 			console_log("File already in cache.") if ($debug);
-			$res = playback("$cachedir/$filename", $intkey);
-			die  if ($res < 0);
-			last if ($res > 0);
-			next;
+			if ($status eq "returning") {
+				print "SET VARIABLE file_to_play $cachedir/$filename\n";
+				last;
+			} else {
+				$res = playback("$cachedir/$filename", $intkey);
+				die  if ($res < 0);
+				last if ($res > 0);
+				next;
+			}
 		}
 	}
 
@@ -228,16 +240,27 @@ for (my $i = 0; $i < $lines; $i++) {
 	system(@soxargs) == 0 or fatal_log("$sox failed: $?");
 	unlink "$tmpname.wav";
 
-	# Playback and save file in cache #
-	$res = playback($tmpname, $intkey);
-	die if ($res < 0);
-	if ($usecache) {
-		console_log("Saving file $filename to cache") if ($debug);
-		move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
+	# Playback and save file in cache or save file in cache and return it #
+	if ($status eq "returning") {
+		if ($usecache) {
+			console_log("Saving file $filename to cache") if ($debug);
+			move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
+		}
+
+		print "SET VARIABLE file_to_play $cachedir/$filename\n";
+
+		last;
 	} else {
-		unlink "$tmpname.$fexten";
+		$res = playback($tmpname, $intkey);
+		die if ($res < 0);
+		if ($usecache) {
+			console_log("Saving file $filename to cache") if ($debug);
+			move("$tmpname.$fexten", "$cachedir/$filename.$fexten");
+		} else {
+			unlink "$tmpname.$fexten";
+		}
+		last if ($res > 0);
 	}
-	last if ($res > 0);
 }
 exit;
 
