@@ -17,6 +17,7 @@ Requirements
 Perl         The Perl Programming Language
 perl-libwww  The World-Wide Web library for Perl
 perl-Crypt-SSLeay or perl-IO-Socket-SSL for SSL/TLS encryption
+perl-LWP-Protocol-https  for HTTPS support
 sox          Sound eXchange, sound processing program
 mpg123       MPEG Audio Player and decoder
 Internet access in order to contact google and get the voice data.
