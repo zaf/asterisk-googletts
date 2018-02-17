@@ -57,14 +57,13 @@ for ($input) {
 		say_msg("No text passed for synthesis.");
 		exit 1;
 	}
-	$_ .= "." unless (/^.+[.,?!:;]$/);
-	@text = /.{1,150}[.,?!:;]|.{1,150}\s/g;
+	@text = /.{1,150}$|.{1,150}[.,?!:;]|.{1,150}\s/g;
 }
 my $lines = @text;
 
 # Initialise User angent #
 my $ua = LWP::UserAgent->new(ssl_opts => { verify_hostname => 1 });
-$ua->agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36");
+$ua->agent("Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:52.0) Gecko/20100101 Firefox/52.0");
 $ua->env_proxy;
 $ua->conn_cache(LWP::ConnCache->new());
 $ua->timeout($timeout);
