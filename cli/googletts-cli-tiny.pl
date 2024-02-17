@@ -116,8 +116,9 @@ if (system($mpg123, "-q", "-w", $wav_name, @mp3list)) {
 }
 
 # Set sox args and process wav file #
+my $audio_driver = sox_driver();
 my @soxargs = ($sox, "-q", $wav_name);
-defined $options{o} ? push(@soxargs, ($options{o})) : push(@soxargs, ("-t", "alsa", "-d"));
+defined $options{o} ? push(@soxargs, ($options{o})) : push(@soxargs, ("-t", $audio_driver, "-d"));
 push(@soxargs, ("tempo", "-s", $speed)) if ($speed != 1);
 push(@soxargs, ("rate", $samplerate)) if ($samplerate);
 
@@ -127,6 +128,16 @@ if (system(@soxargs)) {
 }
 
 exit 0;
+
+sub sox_driver {
+	# Find sox audio driver #
+	my $sox_ver;
+	my $sox_help = `sox --help`;
+	if ($sox_help =~ /AUDIO DEVICE DRIVERS: (\w+)/) {
+		$sox_ver = $1;
+	}
+	return $sox_ver;
+}
 
 sub say_msg {
 	# Print messages to user if 'quiet' flag is not set #
